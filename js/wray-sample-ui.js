@@ -69,7 +69,7 @@ Wray.ui.reveal_ui = function()
         // We can allow overflow to be shown again, since the canvas element
         // is no longer positioned outside the window (which would otherwise
         // trigger scroll bars to be shown, and we don't want that).
-        document.body.style.overflow = "";
+        document.body.style.overflow = "auto";
 
         Wray.ui.elements.initNotice.remove();
     }, {once:true});
