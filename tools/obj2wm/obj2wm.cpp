@@ -109,7 +109,7 @@ static void write_data_into_wm(const std::pair<std::vector<triangle_s>, std::vec
 
     // Write shorthands for certain function calls. This helps shave off some kilobytes in the file's size.
     f << "\tconst t = Wray.triangle;\n";
-	f << "\tconst v = (x,y,z)=>(Wray.vector3(x,y,z).scaled(scale))\n\n";
+    f << "\tconst v = (x,y,z)=>(Wray.vector3(x,y,z).scaled(scale))\n\n";
 
     // Write the triangles.
     f << "\treturn [\n";
