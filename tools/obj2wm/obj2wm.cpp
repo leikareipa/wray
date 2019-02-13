@@ -97,7 +97,7 @@ static void write_data_into_wm(const std::pair<std::vector<triangle_s>, std::vec
 
     // Write the materials.
     // Note that this defaults to lambertian in all cases, at the moment.
-    f << "\tconst materials = [\n";
+    f << "\tconst m = [ // Materials.\n";
     for (auto mat: data.second)
     {
         f << "\t\tWray.material.lambertian(";
@@ -105,15 +105,19 @@ static void write_data_into_wm(const std::pair<std::vector<triangle_s>, std::vec
         f << "0.7"; // Albedo.
         f << "), // '" << mat.name << "'\n";
     }
-    f << "\t];\n\n";
+    f << "\t];\n";
+
+    // Write shorthands for certain function calls. This helps shave off some kilobytes in the file's size.
+    f << "\tconst t = Wray.triangle;\n";
+	f << "\tconst v = (x,y,z)=>(Wray.vector3(x,y,z).scaled(scale))\n\n";
 
     // Write the triangles.
     f << "\treturn [\n";
     for (auto tri: data.first)
     {
-        f << "\t\tWray.triangle([";
-        for (uint i = 0; i < 3; i++) f << "Wray.vector3(" << tri.v[i].x << "," << tri.v[i].y << "," << tri.v[i].z << ").scaled(scale),";
-        f << "], materials[" << tri.materialId << "]),\n";
+        f << "\t\tt([";
+        for (uint i = 0; i < 3; i++) f << "v(" << tri.v[i].x << "," << tri.v[i].y << "," << tri.v[i].z << (i < 2? ")," : ")");
+        f << "],m[" << tri.materialId << "]),\n";
     }
     f << "\t];\n};\n";
 

@@ -175,7 +175,8 @@ function render(ms = 1000)
     }
     else
     {
-        Wray.log("Was asked to render, but invalid conditions were encountered. Ignoring this request.");
+        /// Temporarily commented out, can cause excessive console spam.
+        //Wray.log("Was asked to render, but invalid conditions were encountered. Ignoring this request.");
     }
 
     upload_image_buffer();
