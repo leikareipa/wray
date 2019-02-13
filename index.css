@@ -1,0 +1,103 @@
+body
+{
+    background-color: rgb(167, 167, 167);
+    color: rgb(70, 70, 70);
+    font-variant: small-caps;
+    font-size: 90%;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    margin-top: 50px;
+    margin-bottom: 30px;
+    font-family: "Roboto", sans-serif;
+
+    /* Initially hidden; will be reverted to normal once rendering starts.*/
+    /* This is done to hide the UI past the edge of the screen while initializing.*/
+    overflow: hidden;
+}
+
+/* For the HTML5 canvas we'll render into.*/
+#wray-render-target
+{
+    background-color: dimgray;
+    box-shadow: 0px 24px 10px -20px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    margin: 0px;
+    position: relative;
+    z-index: 3;
+
+    /* Will be unhidden when rendering begins.*/
+    visibility: hidden;
+    transition: left 0.4s ease-out;
+    left: 200%;
+
+    /* Pixelated upscale.*/
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -o-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+}
+
+#wray-status-container
+{
+    background-color: rgb(80, 177, 129);
+    color: rgb(37, 48, 40);
+    border-radius: 5px;
+    width:400px;
+    display: inline-block;
+    padding: 22px 0 13px 0;
+    margin-top: -10px;
+    position: relative;
+    z-index: 1;
+
+    /* Will be unhidden when rendering begins.*/
+    visibility: hidden;
+    transition: left 0.4s ease-out;
+    left: 200%;
+}
+
+#wray-init-notice
+{
+    color: #d8d8d8;
+    font-size: 110%;
+    letter-spacing: 0px;
+    font-weight: bold;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+}
+
+/* Spinners adapted from https://www.w3schools.com/howto/howto_css_loader.asp.*/
+#wray-init-spinner
+{
+    border: 5px solid transparent;
+    border-right: 5px solid #d8d8d8;
+    border-left: 5px solid #d8d8d8;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    animation: spin 2s linear infinite;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+#wray-render-spinner /* Spins to indicate that rendering is ongoing.*/
+{
+    border: 10px solid #64be94;
+    border-top: 10px solid #d3d9d3;
+    border-radius: 50%;
+    width: 23px;
+    height: 23px;
+    animation: spin 5s linear infinite;
+    margin-bottom: 4px;
+    margin-top: -3px;
+
+    display: inline-block;
+    position: relative;
+    z-index: 2;
+}
+@keyframes spin
+{
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(359deg); }
+}

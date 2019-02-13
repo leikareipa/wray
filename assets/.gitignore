@@ -1,0 +1,5 @@
+*
+!.gitignore
+!*/
+!mesh/monkey.obj.wm.js
+!scene-descr/monkey.wray-scene.json

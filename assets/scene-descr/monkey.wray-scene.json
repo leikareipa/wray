@@ -1,0 +1,25 @@
+{
+    "comments":["A Wray scene that renders a mesh of Suzanne the Blender monkey."],
+
+    "meshFile":
+    {
+        "filename":"/assets/mesh/monkey.obj.wm.js",
+        "initializer":"monkeyMesh()"
+    },
+    "camera":
+    {
+        "pos":[-0.2,-0.05,-3.5],
+        "dir":[0,0,1],
+        "rot":[0,0,0],
+        "fov":17,
+        "antialiasing":true
+    },
+    "outputResolution":
+    {
+        "width":1280,
+        "height":720
+    },
+    "maxRayDepth":10,
+    "epsilon":0.000001,
+    "wipeSurface":true
+}

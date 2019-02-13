@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="index.css">
+        <link href="https://fonts.googleapis.com/css?family=Roboto|Martel" rel="stylesheet">
+        <title>Wray sample</title>
+    </head>
+    <body>
+        <!-- A note displayed while Wray initializes (i.e. while it's not rendering anything).
+             Will be hidden once rendering starts.-->
+        <div id="wray-init-notice">
+            <div id="wray-init-spinner"></div>
+            <div>initializing wray</div>
+        </div>
+
+        <!-- The rendering goes here.-->
+        <canvas id="wray-render-target"></canvas><br>
+        <div id="wray-status-container">
+            <div id="wray-render-spinner"></div>
+            <div id="wray-status"></div>
+        </div>
+
+        <script src="./js/wray/wray.js"></script>
+        <script src="./js/wray/assert.js"></script>
+        <script src="./js/wray/log.js"></script>
+        <script src="./js/wray-sample-ui.js"></script>
+    </body>
+</html>
