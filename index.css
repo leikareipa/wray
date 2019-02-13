@@ -69,7 +69,7 @@ body
 }
 
 /* Spinners adapted from https://www.w3schools.com/howto/howto_css_loader.asp.*/
-#wray-init-spinner
+#wray-init-spinner /* Spins to indicate that Wray is initializing.*/
 {
     border: 5px solid transparent;
     border-right: 5px solid #d8d8d8;

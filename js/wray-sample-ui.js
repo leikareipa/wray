@@ -99,6 +99,15 @@ wrayThread.messageCallbacks =
                     sceneJson.outputResolution.width /= Wray.ui.renderDownscale;
                     sceneJson.outputResolution.height /= Wray.ui.renderDownscale;
 
+                    // If a mesh's filename was given, assume it's relative and needs the absolute
+                    // Location host path prefixed.
+                    if (typeof sceneJson.meshFile !== "undefined" &&
+                        typeof sceneJson.meshFile.filename !== "undefined")
+                    {
+                        const basePath = (window.location.origin + window.location.pathname);
+                        sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
+                    }
+
                     wrayThread.postMessage({what:"wray-settings", payload: {...sceneJson}});
                     wrayThread.postMessage({what:"run-renderer", payload:{durationMs:1000}});
                 })

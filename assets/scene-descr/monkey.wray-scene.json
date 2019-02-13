@@ -1,9 +1,10 @@
 {
-    "comments":["A Wray scene that renders a mesh of Suzanne the Blender monkey."],
+    "comments":["A sample Wray scene that renders a mesh of Suzanne the Blender monkey.",
+                "Note that the mesh filename is given as relative to the root of the host path (e.g. 'http://localhost/wray/assets/file.bin' -> 'assets/file.bin')."],
 
     "meshFile":
     {
-        "filename":"/assets/mesh/monkey.obj.wm.js",
+        "filename":"assets/mesh/monkey.obj.wm.js",
         "initializer":"monkeyMesh()"
     },
     "camera":
