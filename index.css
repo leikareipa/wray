@@ -1,6 +1,6 @@
 body
 {
-    background-color: rgb(167, 167, 167);
+    background-color: rgb(134, 134, 134);
     color: rgb(70, 70, 70);
     font-variant: small-caps;
     font-size: 90%;
@@ -20,7 +20,7 @@ body
 #wray-render-target
 {
     background-color: dimgray;
-    box-shadow: 0px 24px 10px -20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 20px -4px rgba(0, 0, 0, 0.4);
     border-radius: 4px;
     margin: 0px;
     position: relative;
@@ -85,7 +85,7 @@ body
 #wray-render-spinner /* Spins to indicate that rendering is ongoing.*/
 {
     border: 10px solid #64be94;
-    border-top: 10px solid #d3d9d3;
+    border-top: 10px solid #c4dac4;
     border-radius: 50%;
     width: 23px;
     height: 23px;
