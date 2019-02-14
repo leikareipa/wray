@@ -5,7 +5,7 @@
  * A barebones user interface example for Wray.
  * 
  * Initializes the Wray renderer, feeds it a scene from a JSON file, and draws the resulting
- * rendering into a HTML5 canvas for the user to peruse.
+ * rendering - received from Wray - into a HTML5 canvas for the user to peruse.
  * 
  * Expects the following elements to be found in its parent HTML's <body>:
  * 
@@ -89,7 +89,7 @@ wrayThread.messageCallbacks =
     ///       than we can set up these callbacks.
     "wray-has-initialized":()=>
     {
-        const sceneFileName = "./assets/scene-descr/monkey.wray-scene.json";
+        const sceneFileName = "./assets/sample1/monkey.wray-scene.json";
 
         Wray.log("Loading the scene from '" + sceneFileName + "'...");
         fetch(sceneFileName)

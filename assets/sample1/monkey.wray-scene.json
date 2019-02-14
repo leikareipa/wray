@@ -4,7 +4,7 @@
 
     "meshFile":
     {
-        "filename":"assets/mesh/monkey.obj.wm.js",
+        "filename":"assets/sample1/monkey.obj.wm.js",
         "initializer":"monkeyMesh()"
     },
     "camera":
