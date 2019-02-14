@@ -99,12 +99,18 @@ wrayThread.messageCallbacks =
                     sceneJson.outputResolution.width /= Wray.ui.renderDownscale;
                     sceneJson.outputResolution.height /= Wray.ui.renderDownscale;
 
-                    // If a mesh's filename was given, assume it's relative and needs the absolute
-                    // Location host path prefixed.
+                    // If a mesh's filename was given, assume it's relative and needs an absolute
+                    // address path prefixed.
                     if (typeof sceneJson.meshFile !== "undefined" &&
                         typeof sceneJson.meshFile.filename !== "undefined")
                     {
-                        const basePath = (window.location.origin + window.location.pathname);
+                        // Convert Wray's URL into a base path.
+                        // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
+                        const lastSlashIdx = window.location.pathname.lastIndexOf('/');
+                        Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
+                        const basePath = (window.location.origin +
+                                          window.location.pathname.substring(0, lastSlashIdx+1));
+
                         sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
                     }
 
