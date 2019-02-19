@@ -34,18 +34,24 @@
  * 
  */
 
-// Initialize Wray by creating a thread for it to run in. by creating its thread and telling it what and how we want it to render.
+// Initialize Wray by creating a thread for it to run in.
 // Note that we don't yet tell it to start the rendering; we'll do that later down the file, here.
 Wray.log("Initializing...");
 wrayThread = new Worker("../js/wray/main-thread.js");
+
+// Maps the message handlers from above to incoming messages from Wray's thread.
+wrayThread.onmessage = (message)=>
+{
+    const messageHandler = wrayThread.messageCallbacks[message.data.what];
+    Wray.assert((typeof messageHandler !== "undefined"), "Can't find the message handler for '" + message.data.what + "'.");
+
+    messageHandler(message.data.payload);
+};
 
 // Establish handlers for the various messages Wray may send us from its thread.
 wrayThread.messageCallbacks =
 {
     // Once Wray's thread has finished setting itself up, it'll emit this message.
-    /// TODO: Could there be a problem here where the worker thread sends this message before
-    ///       we've initialized the callback? I.e. if the thread for whatever initializes faster
-    ///       than we can set up these callbacks.
     "wray-has-initialized":()=>
     {
         const sceneFileName = "./assets/sample1/monkey.wray-scene.json";
@@ -73,13 +79,13 @@ wrayThread.messageCallbacks =
                         sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
                     }
 
-                    wrayThread.postMessage({what:"wray-settings", payload: {...sceneJson}});
-                    wrayThread.postMessage({what:"run-renderer", payload:{durationMs:1000}});
+                    wrayThread.postMessage({what:"wray-settings", payload: sceneJson});
+                    wrayThread.postMessage({what:"render", payload:{durationMs:1000}});
                 })
                 .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
                                             "\" returned with error \"" + error + "\"."));
     },
-    // Will be emittd when Wray's thread is sending us its current frame buffer's contents as a
+    // Will be emitted when Wray's thread is sending us its current frame buffer's contents as a
     // pixel array. We'll then copy its data into a HTML5 canvas for display.
     "rendering-upload":(payload)=>
     {
@@ -123,7 +129,7 @@ wrayThread.messageCallbacks =
         }
 
         // Ask Wray to keep rendering. It'll send us the frame buffer again when it's done.
-        if (!Wray.assertionFailedFlag) wrayThread.postMessage({what:"run-renderer", payload:{durationMs:2000}});
+        if (!Wray.assertionFailedFlag) wrayThread.postMessage({what:"render", payload:{durationMs:2000}});
     },
     "log":(payload)=>
     {
@@ -133,21 +139,16 @@ wrayThread.messageCallbacks =
     {
         Wray.assert(payload.condition, payload.failMessage);
     },
-    // Emitted to let us know the speed at which the renderer is running, etc.
-    "statistics":(payload)=>
+    "rendering-finished":(payload)=>
     {
         Wray.ui.elements.rendererStatus.innerHTML = "";
         Wray.ui.elements.rendererStatus.appendChild(document.createTextNode("~" + payload.avg_samples_per_pixel + " sample" +
                                                             (payload.avg_samples_per_pixel === 1? "" : "s") +
                                                             " per pixel (" + Math.floor(payload.samples_per_second/1000) +
                                                             "k samples/sec)"));
-    },
-};
 
-// Maps the message handlers from above to incoming messages from Wray's thread.
-wrayThread.onmessage = (message)=>
-{
-    wrayThread.messageCallbacks[message.data.what](message.data.payload);
+        wrayThread.postMessage({what:"upload-rendering"});
+    },
 };
 
 Wray.ui = {};

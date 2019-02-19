@@ -49,10 +49,17 @@ onmessage = (message)=>
     {
         // Render for the given number of milliseconds. During this time, this thread won't respond
         // to messages; but any such messages will likely be queued for when the rendering is finished.
-        case "run-renderer":
+        case "render":
         {
             render(payload.durationMs);
             
+            break;
+        }
+
+        case "upload-rendering":
+        {
+            upload_image_buffer();
+
             break;
         }
 
@@ -141,7 +148,7 @@ function upload_image_buffer()
     {
         const {pixelArray, width, height, bpp} = renderSurface.as_transferable_pixel_array();
         postMessage({what:"rendering-upload", payload:{pixels:pixelArray.buffer,
-                                                    width, height, bpp}}, [pixelArray.buffer]); /// TODO: Does Transferable even work when passed as an object property?
+                                                       width, height, bpp}}, [pixelArray.buffer]); /// TODO: Does Transferable even work when passed as an object property?
     }
 }
 
@@ -170,16 +177,14 @@ function render(ms = 1000)
         }
 
         // Send the results of the rendering back to the parent thread.
-        postMessage({what:"statistics", payload:{avg_samples_per_pixel:renderSurface.average_sample_count(),
-                                                samples_per_second:Math.floor(numSamples * (1000 / (Date.now() - startTime)))}});
+        postMessage({what:"rendering-finished", payload:{avg_samples_per_pixel:renderSurface.average_sample_count(),
+                                                         samples_per_second:Math.floor(numSamples * (1000 / (Date.now() - startTime)))}});
     }
     else
     {
         /// Temporarily commented out, can cause excessive console spam.
         //Wray.log("Was asked to render, but invalid conditions were encountered. Ignoring this request.");
     }
-
-    upload_image_buffer();
 }
 
 postMessage({what:"wray-has-initialized"});
