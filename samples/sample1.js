@@ -2,7 +2,7 @@
  * Tarpeeksi Hyvae Soft 2019 /
  * Wray
  * 
- * A barebones user interface example for Wray.
+ * A barebones user interface sample for Wray.
  * 
  * Initializes the Wray renderer, feeds it a scene from a JSON file, and draws the resulting
  * rendering - received from Wray - into a HTML5 canvas for the user to peruse.
@@ -24,61 +24,20 @@
  * 
  * After which you'd include the following Wray source files:
  * 
- *      <script src="./js/wray/wray.js"></script>
- *      <script src="./js/wray/assert.js"></script>
- *      <script src="./js/wray/log.js"></script>
- *      <script src="./js/wray-sample-ui.js"></script>
+ *      <script src="../js/wray/wray.js"></script>
+ *      <script src="../js/wray/assert.js"></script>
+ *      <script src="../js/wray/log.js"></script>
+ * 
+ * And this file itself:
+ * 
+ *      <script src="./sample1.js"></script>
  * 
  */
-
-Wray.ui = {};
-
-// We'll downscale the image's resolution by this multiplier when rendering it, and upscale
-// it by the same amount for display; resulting in other words in fewer but larger pixels.
-Wray.ui.renderDownscale = 1;
-
-// Will be set to false once Wray is ready to start rendering.
-Wray.ui.wrayIsInitializing = true;
-
-// Pre-fetch the UI's HTML elements.
-Wray.ui.elements = Object.freeze(
-{
-    statusContainer: document.getElementById("wray-status-container"),
-    rendererStatus: document.getElementById("wray-status"),
-    initNotice: document.getElementById("wray-init-notice"),
-    rendererCanvas: document.getElementById("wray-render-target"), // Expected to be a <canvas> element.
-});
-Wray.assert(Object.getOwnPropertyNames(Wray.ui.elements).every((element)=>(element !== null)),
-            "Failed to initialize the UI elements.")
-
-// Will cause a sliding animation to bring the UI (and canvas) onto the screen.
-// Prior to this, they're hidden away outside of the window.
-Wray.ui.reveal_ui = function()
-{
-    Wray.ui.wrayIsInitializing = false;
-
-    Wray.ui.elements.statusContainer.style.visibility = "visible";
-    Wray.ui.elements.statusContainer.style.left = "0";
-
-    Wray.ui.elements.rendererCanvas.style.visibility = "visible";
-    Wray.ui.elements.rendererCanvas.style.left = "0";
-
-    // Once the sliding is finished...
-    Wray.ui.elements.rendererCanvas.addEventListener("transitionend", ()=>
-    {
-        // We can allow overflow to be shown again, since the canvas element
-        // is no longer positioned outside the window (which would otherwise
-        // trigger scroll bars to be shown, and we don't want that).
-        document.body.style.overflow = "auto";
-
-        Wray.ui.elements.initNotice.remove();
-    }, {once:true});
-};
 
 // Initialize Wray by creating a thread for it to run in. by creating its thread and telling it what and how we want it to render.
 // Note that we don't yet tell it to start the rendering; we'll do that later down the file, here.
 Wray.log("Initializing...");
-wrayThread = new Worker("./js/wray/main-thread.js");
+wrayThread = new Worker("../js/wray/main-thread.js");
 
 // Establish handlers for the various messages Wray may send us from its thread.
 wrayThread.messageCallbacks =
@@ -189,4 +148,48 @@ wrayThread.messageCallbacks =
 wrayThread.onmessage = (message)=>
 {
     wrayThread.messageCallbacks[message.data.what](message.data.payload);
+};
+
+Wray.ui = {};
+
+// We'll downscale the image's resolution by this multiplier when rendering it, and upscale
+// it by the same amount for display; resulting in other words in fewer but larger pixels.
+Wray.ui.renderDownscale = 1;
+
+// Will be set to false once Wray is ready to start rendering.
+Wray.ui.wrayIsInitializing = true;
+
+// Pre-fetch the UI's HTML elements.
+Wray.ui.elements = Object.freeze(
+{
+    statusContainer: document.getElementById("wray-status-container"),
+    rendererStatus: document.getElementById("wray-status"),
+    initNotice: document.getElementById("wray-init-notice"),
+    rendererCanvas: document.getElementById("wray-render-target"), // Expected to be a <canvas> element.
+});
+Wray.assert(Object.getOwnPropertyNames(Wray.ui.elements).every((element)=>(element !== null)),
+            "Failed to initialize the UI elements.")
+
+// Will cause a sliding animation to bring the UI (and canvas) onto the screen.
+// Prior to this, they're hidden away outside of the window.
+Wray.ui.reveal_ui = function()
+{
+    Wray.ui.wrayIsInitializing = false;
+
+    Wray.ui.elements.statusContainer.style.visibility = "visible";
+    Wray.ui.elements.statusContainer.style.left = "0";
+
+    Wray.ui.elements.rendererCanvas.style.visibility = "visible";
+    Wray.ui.elements.rendererCanvas.style.left = "0";
+
+    // Once the sliding is finished...
+    Wray.ui.elements.rendererCanvas.addEventListener("transitionend", ()=>
+    {
+        // We can allow overflow to be shown again, since the canvas element
+        // is no longer positioned outside the window (which would otherwise
+        // trigger scroll bars to be shown, and we don't want that).
+        document.body.style.overflow = "auto";
+
+        Wray.ui.elements.initNotice.remove();
+    }, {once:true});
 };
