@@ -38,7 +38,7 @@ Wray.bvh_aabb = function(mesh = [Wray.triangle()], isLeaf = false)
         min,
         max,
         isLeaf,
-        triangles: (isLeaf? mesh : []),
+        triangles: Object.freeze(isLeaf? mesh : []),
 
         mutable:
         {
@@ -123,7 +123,7 @@ Wray.bvh = function(scene = [Wray.triangle()])
     const publicInterface = Object.freeze(
     {
         base: baseAABB,
-        triangles: scene,
+        triangles: Object.freeze(scene),
 
         // Returns the count of triangles in the BVH's leaf nodes.
         num_triangles: function()

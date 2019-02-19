@@ -22,9 +22,9 @@ Wray.triangle = function(vertices = [Wray.vector3(),Wray.vector3(),Wray.vector3(
 
     const publicInterface = Object.freeze(
     {
+        vertices: Object.freeze(vertices),
         material,
         normal,
-        vertices,
     });
     return publicInterface;
 }

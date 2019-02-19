@@ -1,10 +1,10 @@
 /*
  * Tarpeeksi Hyvae Soft 2019 /
- * Wray
+ * Retro n-gon renderer
  *
  * 4-by-4 matrix manipulation.
  * 
- * Adapted from code written originally by Benny Bobaganoosh for his 3d software
+ * Adapted and modified from code written originally by Benny Bobaganoosh for his 3d software
  * renderer (https://github.com/BennyQBD/3DSoftwareRenderer). Full attribution:
  * {
  *     Copyright (c) 2014, Benny Bobaganoosh
@@ -38,21 +38,22 @@
 // Provides manipulation of 4-by-4 matrices.
 Wray.matrix44 = (()=>
 {
-    return Object.freeze({
+    return Object.freeze(
+    {
         scale: function(x = 0, y = 0, z = 0)
         {
-            return [x, 0, 0, 0,
-                    0, y, 0, 0,
-                    0, 0, z, 0,
-                    0, 0, 0, 1];
+            return Object.freeze([x, 0, 0, 0,
+                                  0, y, 0, 0,
+                                  0, 0, z, 0,
+                                  0, 0, 0, 1]);
         },
 
         translate: function(x = 0, y = 0, z = 0)
         {
-            return [1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    x, y, z, 1];
+            return Object.freeze([1, 0, 0, 0,
+                                  0, 1, 0, 0,
+                                  0, 0, 1, 0,
+                                  x, y, z, 1]);
         },
 
         rotate: function(x = 0, y = 0, z = 0)
@@ -76,7 +77,7 @@ Wray.matrix44 = (()=>
             const mResult = Wray.matrix44.matrices_multiplied(mx, temp);
 
             Wray.assert((mResult.length === 16), "Expected a 4 x 4 matrix.");
-            return mResult;
+            return Object.freeze(mResult);
         },
 
         perspective: function(fov = 0, aspectRatio = 0, zNear = 0, zFar = 0)
@@ -84,28 +85,20 @@ Wray.matrix44 = (()=>
             const fovHalf = Math.tan(fov / 2);
             const zRange = (zNear - zFar);
 
-            return [(1 / (fovHalf * aspectRatio)), 0,             0,                             0,
-                    0,                             (1 / fovHalf), 0,                             0,
-                    0,                             0,             ((-zNear - zFar) / zRange),    1,
-                    0,                             0,             (2 * zFar * (zNear / zRange)), 0];
+            return Object.freeze([(1 / (fovHalf * aspectRatio)), 0,             0,                             0,
+                                   0,                            (1 / fovHalf), 0,                             0,
+                                   0,                            0,             ((-zNear - zFar) / zRange),    1,
+                                   0,                            0,             (2 * zFar * (zNear / zRange)), 0]);
         },
 
         screen_space: function(width = 0, height = 0)
         {
-            return [(width/2),     0,              0, 0,
-                    0,             -(height/2),    0, 0,
-                    0,             0,              1, 0,
-                    (width/2)-0.5, (height/2)-0.5, 0, 1];
+            return Object.freeze([(width/2),     0,              0, 0,
+                                  0,             -(height/2),    0, 0,
+                                  0,             0,              1, 0,
+                                  (width/2)-0.5, (height/2)-0.5, 0, 1]);
         },
-
-        identity: function()
-        {
-            return [1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1];
-        },
-
+        
         matrices_multiplied: function(m1 = [], m2 = [])
         {
             Wray.assert(((m1.length === 16) && (m2.length === 16)), "Expected 4 x 4 matrices.");
@@ -123,7 +116,7 @@ Wray.matrix44 = (()=>
             }
 
             Wray.assert((mResult.length === 16), "Expected a 4 x 4 matrix.");
-            return mResult;
+            return Object.freeze(mResult);
         },
     });
 })();
