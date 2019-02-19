@@ -1,0 +1,5 @@
+*
+!.gitignore
+!*/
+!perftest1/monkey.obj.wm.js
+!perftest1/monkey.wray-scene.json

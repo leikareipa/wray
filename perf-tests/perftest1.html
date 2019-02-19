@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <style>
+            body
+            {
+                background-color: rgb(0, 0, 0);
+                color: lightgray;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+                margin-top: 20px;
+            }
+        </style>
+        <title>Performance test #1 - Render speed - Wray</title>
+    </head>
+    <body>
+        <script>
+            // For how many milliseconds to let the test rendering run.
+            const testTimeMs = 3000;
+
+            const testResultElement = document.createElement("p");
+            document.body.appendChild(testResultElement);
+            testResultElement.appendChild(document.createTextNode("Initializing Wray..."));
+
+            wrayThread = new Worker("../js/wray/main-thread.js");
+
+            wrayThread.onmessage = (message)=>
+            {
+                const messageHandler = wrayThread.messageCallbacks[message.data.what];
+
+                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.what + "'.");
+                else messageHandler(message.data.payload);
+            };
+
+            wrayThread.messageCallbacks =
+            {
+                "wray-has-initialized":()=>
+                {
+                    const sceneFileName = "./assets/perftest1/monkey.wray-scene.json";
+
+                    testResultElement.innerHTML = "";
+                    testResultElement.appendChild(document.createTextNode("Running the test for " + testTimeMs/1000 + " seconds..."));
+
+                    fetch(sceneFileName)
+                        .then((response)=>response.json())
+                        .then((sceneJson)=>
+                        {
+                            // If a mesh's filename was given, assume it's relative and needs an absolute
+                            // address path prefixed.
+                            if (typeof sceneJson.meshFile !== "undefined" &&
+                                typeof sceneJson.meshFile.filename !== "undefined")
+                            {
+                                // Convert Wray's URL into a base path.
+                                // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
+                                const lastSlashIdx = window.location.pathname.lastIndexOf('/');
+                                const basePath = (window.location.origin +
+                                                window.location.pathname.substring(0, lastSlashIdx+1));
+
+                                sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
+                            }
+
+                            wrayThread.postMessage({what:"wray-settings", payload: sceneJson});
+                            wrayThread.postMessage({what:"render", payload:{durationMs:testTimeMs}});
+                        })
+                        .catch((error)=>window.alert("Attempt to fetch file \"" + sceneFileName +
+                                                     "\" returned with error \"" + error + "\"."));
+                },
+                "log":(payload)=>
+                {
+                    console.log("Wray:", payload.string);
+                },
+                "assert":(payload)=>
+                {
+                    if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
+                },
+                "rendering-finished":(payload)=>
+                {
+                    test_finished(payload.samples_per_second);
+                },
+            };
+
+            function test_finished(samplesPerSecond = 0)
+            {
+                testResultElement.innerHTML = "";
+                testResultElement.appendChild(document.createTextNode("Current performance: " + samplesPerSecond + " samples/sec."));
+
+                wrayThread.postMessage({what:"render", payload:{durationMs:testTimeMs}});
+            }
+        </script>
+    </body>
+</html>
