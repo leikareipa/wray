@@ -63,6 +63,14 @@ onmessage = (message)=>
             break;
         }
 
+        // An echo to test postMessage()'s roundtrip delay between this and the parent thread.
+        case "ping":
+        {
+            postMessage({what:"ping-response", payload:{timestamp: payload.timestamp}});
+
+            break;
+        }
+
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case "settings":
         {
