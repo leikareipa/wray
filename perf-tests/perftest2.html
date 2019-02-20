@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <style>
+            body
+            {
+                background-color: rgb(0, 0, 0);
+                color: lightgray;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+                margin-top: 20px;
+            }
+        </style>
+        <title>Performance test #2: inter-thread pixel buffer transfer speed - Wray</title>
+    </head>
+    <body>
+        <script>
+            /*
+             * Tests Wray's pixel buffer transfer speed between the window thread and Wray's worker
+             * thread. Includes overhead from any tonemapping, range conversion, etc. that happens
+             * on Wray's end prior to the buffer being sent to the window thread.
+             *
+             * Once Wray has initialized, will first ping Wray to find the message delay, then
+             * go through each test resolution to find the corresponding transfer speed.
+             * 
+             * Not particularly clean code, but does the job.
+             * 
+             */
+
+            // Create the HTML element we'll display the results in.
+            const testResultElement = document.createElement("p");
+            testResultElement.style.cssText = "display: inline-block; width: 300px; text-align: left;"
+            document.body.appendChild(testResultElement);
+            testResultElement.innerHTML = "Initializing Wray...";
+
+            // The resolutions we'll run the tests with (in this order).
+            const testResolutions = [{width:160, height:120},
+                                     {width:320, height:240},
+                                     {width:640, height:480},
+                                     {width:1024, height:768},
+                                     {width:1280, height:720},
+                                     {width:2048, height:1080},
+                                     {width:4096, height:2160}];
+
+            // Will be set (e.g. with performance.now()) at the start of each test, so we can
+            // calculate the time taken once the test finishes.
+            let startTime = 0;
+
+            wrayThread = new Worker("../js/wray/main-thread.js");
+
+            wrayThread.onmessage = (message)=>
+            {
+                const messageHandler = wrayThread.messageCallbacks[message.data.what];
+
+                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.what + "'.");
+                else messageHandler(message.data.payload);
+            };
+
+            function test_resolution(resolution = {width:0, height:0})
+            {
+                startTime = performance.now();
+                
+                // The list of test resolutions gets shifted by one each time before this function
+                // is called, so if that list's length is 0, all the tests have completed.
+                if (testResolutions.length > 0)
+                {
+                    testResultElement.innerHTML += resolution.width + " x " + resolution.height + "...";
+
+                    // Have Wray set the size of its render buffer accordingly, then upload it to us.
+                    wrayThread.postMessage({what:"settings", payload:{outputResolution:resolution}});
+                    wrayThread.postMessage({what:"upload-rendering"});
+                }
+                else
+                {
+                    testResultElement.innerHTML += "<br>Done.";
+                }
+            }
+
+            wrayThread.messageCallbacks =
+            {
+                "wray-has-initialized":()=>
+                {
+                    testResultElement.innerHTML = "Ping...";
+                    wrayThread.postMessage({what:"ping", payload:{timestamp:performance.now()}});
+                },
+                "ping-response":(payload)=>
+                {
+                    testResultElement.innerHTML += " " + Math.floor(performance.now() - payload.timestamp) + " ms.<br>";
+                    test_resolution(testResolutions[0]);
+                },
+                "log":(payload)=>
+                {
+                    console.log("Wray:", payload.string);
+                },
+                "assert":(payload)=>
+                {
+                    if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
+                },
+                "rendering-upload":(payload)=>
+                {
+                    if (!payload.pixels ||
+                        payload.width !== testResolutions[0].width ||
+                        payload.height !== testResolutions[0].height ||
+                        payload.bpp !== 32)
+                    {
+                        window.alert("Received an invalid render upload.");
+                    }
+                    else
+                    {
+                        const ms = Math.floor(performance.now() - startTime);
+                        testResultElement.innerHTML += " " + ms + " ms.<br>";
+
+                        testResolutions.shift();
+                        test_resolution(testResolutions[0]);
+                    }
+                },
+            };
+        </script>
+    </body>
+</html>
