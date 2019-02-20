@@ -79,7 +79,7 @@ wrayThread.messageCallbacks =
                         sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
                     }
 
-                    wrayThread.postMessage({what:"wray-settings", payload: sceneJson});
+                    wrayThread.postMessage({what:"settings", payload: sceneJson});
                     wrayThread.postMessage({what:"render", payload:{durationMs:1000}});
                 })
                 .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +

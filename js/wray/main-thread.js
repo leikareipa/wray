@@ -64,7 +64,7 @@ onmessage = (message)=>
         }
 
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
-        case "wray-settings":
+        case "settings":
         {
             if (typeof payload.epsilon !== "undefined")
             {
