@@ -139,6 +139,10 @@ wrayThread.messageCallbacks =
     {
         Wray.assert(payload.condition, payload.failMessage);
     },
+    "rendering-failed":(payload)=>
+    {
+        window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+    },
     "rendering-finished":(payload)=>
     {
         Wray.ui.elements.rendererStatus.innerHTML = "";

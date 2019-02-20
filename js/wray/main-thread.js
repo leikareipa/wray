@@ -155,6 +155,7 @@ function upload_image_buffer()
 // Sample the rendering for x milliseconds.
 function render(ms = 1000)
 {
+    // If we have a valid context for rendering.
     if (sceneBVH && renderSurface && !Wray.assertionFailedFlag)
     {
         // This thread will be unavailable for interaction while the render loop runs, so make
@@ -182,8 +183,12 @@ function render(ms = 1000)
     }
     else
     {
-        /// Temporarily commented out, can cause excessive console spam.
-        //Wray.log("Was asked to render, but invalid conditions were encountered. Ignoring this request.");
+        const failReason = "";
+        if (!sceneBVH) reason += "Invalid BVH tree. ";
+        if (!renderSurface) reason += "Invalid render surface. ";
+        if (Wray.assertionFailedFlag) reason += "Assertion failed. ";
+
+        postMessage({what:"rendering-failed", payload:{reason:failReason}});
     }
 }
 

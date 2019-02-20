@@ -76,6 +76,10 @@
                 {
                     if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
                 },
+                "rendering-failed":(payload)=>
+                {
+                    window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+                },
                 "rendering-finished":(payload)=>
                 {
                     test_finished(payload.samples_per_second);
