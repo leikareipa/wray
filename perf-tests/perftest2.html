@@ -70,7 +70,7 @@
                     testResultElement.innerHTML += resolution.width + " x " + resolution.height + "...";
 
                     // Have Wray set the size of its render buffer accordingly, then upload it to us.
-                    wrayThread.postMessage({what:"settings", payload:{outputResolution:resolution}});
+                    wrayThread.postMessage({what:"assign-settings", payload:{outputResolution:resolution}});
                     wrayThread.postMessage({what:"upload-rendering"});
                 }
                 else

@@ -59,15 +59,15 @@ wrayThread.messageCallbacks =
         Wray.log("Loading the scene from '" + sceneFileName + "'...");
         fetch(sceneFileName)
                 .then((response)=>response.json())
-                .then((sceneJson)=>
+                .then((sceneSettings)=>
                 {
-                    sceneJson.outputResolution.width /= Wray.ui.renderDownscale;
-                    sceneJson.outputResolution.height /= Wray.ui.renderDownscale;
+                    sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
+                    sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
 
                     // If a mesh's filename was given, assume it's relative and needs an absolute
                     // address path prefixed.
-                    if (typeof sceneJson.meshFile !== "undefined" &&
-                        typeof sceneJson.meshFile.filename !== "undefined")
+                    if (typeof sceneSettings.meshFile !== "undefined" &&
+                        typeof sceneSettings.meshFile.filename !== "undefined")
                     {
                         // Convert Wray's URL into a base path.
                         // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
@@ -76,10 +76,10 @@ wrayThread.messageCallbacks =
                         const basePath = (window.location.origin +
                                           window.location.pathname.substring(0, lastSlashIdx+1));
 
-                        sceneJson.meshFile.filename = (basePath + sceneJson.meshFile.filename);
+                        sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                     }
 
-                    wrayThread.postMessage({what:"settings", payload: sceneJson});
+                    wrayThread.postMessage({what:"assign-settings", payload: sceneSettings});
                     wrayThread.postMessage({what:"render", payload:{durationMs:1000}});
                 })
                 .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +

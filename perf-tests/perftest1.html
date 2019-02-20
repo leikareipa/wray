@@ -62,7 +62,7 @@
                                 sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                             }
 
-                            wrayThread.postMessage({what:"settings", payload: sceneSettings});
+                            wrayThread.postMessage({what:"assign-settings", payload: sceneSettings});
                             wrayThread.postMessage({what:"render", payload:{durationMs:testTimeMs}});
                         })
                         .catch((error)=>window.alert("Attempt to fetch file \"" + sceneFileName +

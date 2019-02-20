@@ -72,7 +72,7 @@ onmessage = (message)=>
         }
 
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
-        case "settings":
+        case "assign-settings":
         {
             if (typeof payload.epsilon !== "undefined")
             {
