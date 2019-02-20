@@ -40,7 +40,6 @@
             const testResolutions = [{width:160, height:120},
                                      {width:320, height:240},
                                      {width:640, height:480},
-                                     {width:1024, height:768},
                                      {width:1280, height:720},
                                      {width:2048, height:1080},
                                      {width:4096, height:2160}];
@@ -61,8 +60,6 @@
 
             function test_resolution(resolution = {width:0, height:0})
             {
-                startTime = performance.now();
-                
                 // The list of test resolutions gets shifted by one each time before this function
                 // is called, so if that list's length is 0, all the tests have completed.
                 if (testResolutions.length > 0)
@@ -70,8 +67,15 @@
                     testResultElement.innerHTML += resolution.width + " x " + resolution.height + "...";
 
                     // Have Wray set the size of its render buffer accordingly, then upload it to us.
+                    // Note: There's currently no return message for when the buffer resize has finished, and
+                    // we don't want that process to count toward the overall time, so we'll just kludge
+                    // it with a timeout and assume the buffer's been resized by the time the timer fires.
                     wrayThread.postMessage({what:"assign-settings", payload:{outputResolution:resolution}});
-                    wrayThread.postMessage({what:"upload-rendering"});
+                    setTimeout(()=>
+                    {
+                        startTime = performance.now();
+                        wrayThread.postMessage({what:"upload-rendering"});
+                    }, 1500)
                 }
                 else
                 {
