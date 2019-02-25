@@ -1,5 +1,0 @@
-*
-!.gitignore
-!*/
-!perftest1/monkey.wray-mesh.js
-!perftest1/monkey.wray-scene.json
