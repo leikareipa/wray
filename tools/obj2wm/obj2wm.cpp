@@ -127,7 +127,7 @@ static void write_data_into_wm(const std::pair<std::vector<triangle_s>, std::vec
 static void obj2wm(const char *const objFilename)
 {
     const auto data = data_from_obj(objFilename);
-    write_data_into_wm(data, (std::string(objFilename) + std::string(".wm.js")).c_str());
+    write_data_into_wm(data, (std::string(objFilename) + std::string(".wray-mesh.js")).c_str());
 
     return;
 }

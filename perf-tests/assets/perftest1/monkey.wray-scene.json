@@ -4,7 +4,7 @@
 
     "meshFile":
     {
-        "filename":"assets/perftest1/monkey.obj.wm.js",
+        "filename":"assets/perftest1/monkey.wray-mesh.js",
         "initializer":"monkeyMesh()"
     },
     "camera":
