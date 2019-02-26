@@ -112,14 +112,14 @@ static void write_data_into_wm(const std::pair<std::vector<triangle_s>, std::vec
     f << "\tconst v = (x,y,z)=>(Wray.vector3(x,y,z).scaled(scale))\n\n";
 
     // Write the triangles.
-    f << "\treturn [\n";
+    f << "\treturn Object.freeze(\n\t[\n";
     for (auto tri: data.first)
     {
         f << "\t\tt([";
         for (uint i = 0; i < 3; i++) f << "v(" << tri.v[i].x << "," << tri.v[i].y << "," << tri.v[i].z << (i < 2? ")," : ")");
         f << "],m[" << tri.materialId << "]),\n";
     }
-    f << "\t];\n};\n";
+    f << "\t]);\n};\n";
 
     return;
 }

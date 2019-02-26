@@ -18,7 +18,7 @@ For best results, you'll want to run Wray through a server. This can be done loc
 ### Communicating with Wray's thread
 As hinted at, above, you use Wray by first spawning it into a separate Web Worker thread (e.g. `wrayThread = new Worker("js/wray/main-thread.js")`), then control it by sending it commands via `wrayThread.postMessage()`. The Wray thread may also send messages back to the parent thread that spawned it. Examples of this in practice can be found under [samples/](samples/).
 
-The following is a list of commands that can be sent to Wray's thread to control its behavior. (Note that each command also contains a `payload` object, which provides additional data related to the command. The list that follows doesn't touch on the contents of `payload` &mdash; for now, you can view the example code provided under [samples/](samples/) to see which payload properties are expected to be included with a given message.)
+**The following is a list of commands that can be sent to Wray's thread to control its behavior.** (Note that each command also contains a `payload` object, which provides additional data related to the command. The list that follows doesn't touch on the contents of `payload` &mdash; for now, you can view the example code provided under [samples/](samples/) to see which payload properties are expected to be included with a given message.)
 - `assign-settings`
     - Assign various settings of Wray's, like render resolution and the scene to be rendered.
     - Response from Wray's thread: none.
@@ -35,7 +35,7 @@ The following is a list of commands that can be sent to Wray's thread to control
     - An echo to test the message system's roundtrip time between the calling thread and Wray's thread.
     - Response: `ping-response`.
 
-Wray's thread may send one or more of following messages back to its parent thread:
+**Wray's thread may send one or more of following messages back to its parent thread:**
 - `wray-has-initialized`
     - Emitted once Wray's thread has finished setting itself up and is ready to be controlled by the parent thread. The delay between a call to `new Worker()` and this message being emitted is expected to be in the tens of milliseconds.
 - `ping-response`
