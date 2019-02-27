@@ -1,5 +1,5 @@
 # Wray
-A vanilla path tracer written in vanilla JavaScript. Primarily intended as a simple path tracer for use in some of my personal projects, but someone else may derive a benefit from this, as well.
+A vanilla path tracer written in vanilla JavaScript. Primarily intended as a simple path tracer for use in some of my own projects; but who knows, someone else might derive a benefit from this, as well.
 
 ### Features
 - Vanilla path-tracing in the browser
