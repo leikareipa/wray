@@ -27,7 +27,7 @@ Wray.assert = function(condition = false, failMessage = "")
             }
             else
             {
-                postMessage({what:"assert", payload:{condition, failMessage}});
+                postMessage(Wray.message.assert(condition, failMessage));
             }
         }
         else

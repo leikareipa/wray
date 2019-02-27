@@ -42,8 +42,8 @@ wrayThread = new Worker("../js/wray/main-thread.js");
 // Maps the message handlers from above to incoming messages from Wray's thread.
 wrayThread.onmessage = (message)=>
 {
-    const messageHandler = wrayThread.messageCallbacks[message.data.what];
-    Wray.assert((typeof messageHandler !== "undefined"), "Can't find the message handler for '" + message.data.what + "'.");
+    const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
+    Wray.assert((typeof messageHandler !== "undefined"), "Can't find the message handler for '" + message.data.messageId + "'.");
 
     messageHandler(message.data.payload);
 };
@@ -58,32 +58,32 @@ wrayThread.messageCallbacks =
 
         Wray.log("Loading the scene from '" + sceneFileName + "'...");
         fetch(sceneFileName)
-                .then((response)=>response.json())
-                .then((sceneSettings)=>
-                {
-                    sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
-                    sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
+        .then((response)=>response.json())
+        .then((sceneSettings)=>
+        {
+            sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
+            sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
 
-                    // If a mesh's filename was given, assume it's relative and needs an absolute
-                    // address path prefixed.
-                    if (typeof sceneSettings.meshFile !== "undefined" &&
-                        typeof sceneSettings.meshFile.filename !== "undefined")
-                    {
-                        // Convert Wray's URL into a base path.
-                        // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
-                        const lastSlashIdx = window.location.pathname.lastIndexOf('/');
-                        Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
-                        const basePath = (window.location.origin +
-                                          window.location.pathname.substring(0, lastSlashIdx+1));
+            // If a mesh's filename was given, assume it's relative and needs an absolute
+            // address path prefixed.
+            if (typeof sceneSettings.meshFile !== "undefined" &&
+                typeof sceneSettings.meshFile.filename !== "undefined")
+            {
+                // Convert Wray's URL into a base path.
+                // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
+                const lastSlashIdx = window.location.pathname.lastIndexOf('/');
+                Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
+                const basePath = (window.location.origin +
+                                  window.location.pathname.substring(0, lastSlashIdx+1));
 
-                        sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
-                    }
+                sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
+            }
 
-                    wrayThread.postMessage({what:"assign-settings", payload: sceneSettings});
-                    wrayThread.postMessage({what:"render", payload:{durationMs:1000}});
-                })
-                .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
-                                            "\" returned with error \"" + error + "\"."));
+            wrayThread.postMessage(Wray.message.assignSettings(sceneSettings));
+            wrayThread.postMessage(Wray.message.render(1000));
+        })
+        .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
+                                    "\" returned with error \"" + error + "\"."));
     },
     // Will be emitted when Wray's thread is sending us its current frame buffer's contents as a
     // pixel array. We'll then copy its data into a HTML5 canvas for display.
@@ -129,7 +129,7 @@ wrayThread.messageCallbacks =
         }
 
         // Ask Wray to keep rendering. It'll send us the frame buffer again when it's done.
-        if (!Wray.assertionFailedFlag) wrayThread.postMessage({what:"render", payload:{durationMs:2000}});
+        if (!Wray.assertionFailedFlag) wrayThread.postMessage(Wray.message.render(2000));
     },
     "log":(payload)=>
     {
@@ -151,7 +151,7 @@ wrayThread.messageCallbacks =
                                                             " per pixel (" + Math.floor(payload.samples_per_second/1000) +
                                                             "k samples/sec)"));
 
-        wrayThread.postMessage({what:"upload-rendering"});
+        wrayThread.postMessage(Wray.message.uploadRendering());
     },
 };
 

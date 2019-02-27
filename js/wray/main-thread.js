@@ -11,6 +11,7 @@
 
 // Include Wray's code.
 importScripts("../../js/wray/wray.js");
+importScripts("../../js/wray/message.js");
 importScripts("../../js/wray/assert.js");
 importScripts("../../js/wray/log.js");
 importScripts("../../js/wray/matrix44.js");
@@ -45,7 +46,7 @@ onmessage = (message)=>
 {
     const payload = message.data.payload;
 
-    switch (message.data.what)
+    switch (message.data.messageId)
     {
         // Render for the given number of milliseconds. During this time, this thread won't respond
         // to messages; but any such messages will likely be queued for when the rendering is finished.
@@ -66,7 +67,7 @@ onmessage = (message)=>
         // An echo to test postMessage()'s roundtrip delay between this and the parent thread.
         case "ping":
         {
-            postMessage({what:"ping-response", payload:{timestamp: payload.timestamp}});
+            postMessage(Wray.message.pingResponse(payload.timestamp));
 
             break;
         }
@@ -140,7 +141,7 @@ onmessage = (message)=>
             break;
         }
 
-        default: Wray.log("Unknown message '" + message.data.what + "' sent to worker thread. Ignoring it."); break;
+        default: Wray.log("Unknown message '" + message.data.messageId + "' sent to worker thread. Ignoring it."); break;
     }
 }
 
@@ -150,13 +151,13 @@ function upload_image_buffer()
 {
     if (!renderSurface || Wray.assertionFailedFlag)
     {
-        postMessage({what:"rendering-upload", payload:{pixels:null}});
+        postMessage(Wray.message.renderingUpload({pixels:null}));
     }
     else
     {
         const {pixelArray, width, height, bpp} = renderSurface.as_transferable_pixel_array();
-        postMessage({what:"rendering-upload", payload:{pixels:pixelArray.buffer,
-                                                       width, height, bpp}}, [pixelArray.buffer]); /// TODO: Does Transferable even work when passed as an object property?
+        postMessage(Wray.message.renderingUpload({pixels:pixelArray.buffer, width, height, bpp}),
+                                                 [pixelArray.buffer]);
     }
 }
 
@@ -186,8 +187,8 @@ function render(ms = 1000)
         }
 
         // Send the results of the rendering back to the parent thread.
-        postMessage({what:"rendering-finished", payload:{avg_samples_per_pixel:renderSurface.average_sample_count(),
-                                                         samples_per_second:Math.floor(numSamples * (1000 / (Date.now() - startTime)))}});
+        postMessage(Wray.message.renderingFinished(renderSurface.average_sample_count(),
+                                                   Math.floor(numSamples * (1000 / (Date.now() - startTime)))));
     }
     else
     {
@@ -196,8 +197,8 @@ function render(ms = 1000)
         if (!renderSurface) reason += "Invalid render surface. ";
         if (Wray.assertionFailedFlag) reason += "Assertion failed. ";
 
-        postMessage({what:"rendering-failed", payload:{reason:failReason}});
+        postMessage(Wray.message.renderingFailed(failReason));
     }
 }
 
-postMessage({what:"wray-has-initialized"});
+postMessage(Wray.message.finishedInitializing());

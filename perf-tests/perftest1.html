@@ -17,6 +17,8 @@
         <title>Performance test #1: render speed - Wray</title>
     </head>
     <body>
+        <script src="../js/wray/wray.js"></script>
+        <script src="../js/wray/message.js"></script>
         <script>
             // For how many milliseconds to let the test rendering run.
             const testTimeMs = 3000;
@@ -29,9 +31,9 @@
 
             wrayThread.onmessage = (message)=>
             {
-                const messageHandler = wrayThread.messageCallbacks[message.data.what];
+                const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
 
-                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.what + "'.");
+                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.messageId + "'.");
                 else messageHandler(message.data.payload);
             };
 
@@ -62,8 +64,8 @@
                                 sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                             }
 
-                            wrayThread.postMessage({what:"assign-settings", payload: sceneSettings});
-                            wrayThread.postMessage({what:"render", payload:{durationMs:testTimeMs}});
+                            wrayThread.postMessage(Wray.message.assignSettings(sceneSettings));
+                            wrayThread.postMessage(Wray.message.render(testTimeMs));
                         })
                         .catch((error)=>window.alert("Attempt to fetch file \"" + sceneFileName +
                                                      "\" returned with error \"" + error + "\"."));
@@ -91,7 +93,7 @@
                 testResultElement.innerHTML = "";
                 testResultElement.appendChild(document.createTextNode("Current performance: " + samplesPerSecond + " samples/sec."));
 
-                wrayThread.postMessage({what:"render", payload:{durationMs:testTimeMs}});
+                wrayThread.postMessage(Wray.message.render(testTimeMs));
             }
         </script>
     </body>

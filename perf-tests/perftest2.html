@@ -17,6 +17,8 @@
         <title>Performance test #2: inter-thread pixel buffer transfer speed - Wray</title>
     </head>
     <body>
+        <script src="../js/wray/wray.js"></script>
+        <script src="../js/wray/message.js"></script>
         <script>
             /*
              * Tests Wray's pixel buffer transfer speed between the window thread and Wray's worker
@@ -52,9 +54,9 @@
 
             wrayThread.onmessage = (message)=>
             {
-                const messageHandler = wrayThread.messageCallbacks[message.data.what];
+                const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
 
-                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.what + "'.");
+                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.messageId + "'.");
                 else messageHandler(message.data.payload);
             };
 
@@ -70,11 +72,11 @@
                     // Note: There's currently no return message for when the buffer resize has finished, and
                     // we don't want that process to count toward the overall time, so we'll just kludge
                     // it with a timeout and assume the buffer's been resized by the time the timer fires.
-                    wrayThread.postMessage({what:"assign-settings", payload:{outputResolution:resolution}});
+                    wrayThread.postMessage(Wray.message.assignSettings({outputResolution:resolution}));
                     setTimeout(()=>
                     {
                         startTime = performance.now();
-                        wrayThread.postMessage({what:"upload-rendering"});
+                        wrayThread.postMessage(Wray.message.uploadRendering());
                     }, 1500)
                 }
                 else
@@ -88,7 +90,7 @@
                 "wray-has-initialized":()=>
                 {
                     testResultElement.innerHTML = "Ping...";
-                    wrayThread.postMessage({what:"ping", payload:{timestamp:performance.now()}});
+                    wrayThread.postMessage(Wray.message.ping(performance.now()));
                 },
                 "ping-response":(payload)=>
                 {
