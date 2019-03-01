@@ -28,7 +28,7 @@
 
             // The samples/sec count for each test interval. The overall test result
             // will be the average of these values.
-            const results = [];
+            let results = [];
 
             // Create a HTML element through which we can relay messages about
             // the test's progress to the user.
@@ -98,15 +98,13 @@
                     },
                     "rendering-finished":(payload)=>
                     {
+                        update_results(payload.samples_per_second);
+
                         if ((performance.now() - startTime) < testTimeMs)
                         {
                             wrayThread.postMessage(Wray.message.render(updateIntervalMs));
-                            update_results(payload.samples_per_second);
                         }
-                        else
-                        {
-                            test_finished();
-                        }
+                        else test_finished();
                     },
                 };
 
@@ -126,10 +124,12 @@
 
                 function test_finished()
                 {
-                    const avg = Math.round(results.reduce((a,b)=>(a+b)) / results.length);
+                    const avg = (results.reduce((a,v)=>(a+v)) / results.length);
+                    const sd = Math.sqrt(results.map((v)=>Math.pow(v-avg, 2)).reduce((a,b)=>(a+b)) / results.length);
 
                     testResultElement.innerHTML = "";
-                    testResultElement.appendChild(document.createTextNode("Finished. Average: " + avg + " samples/sec."));
+                    testResultElement.appendChild(document.createTextNode("Finished. Average: " + Math.round(avg) + " samples/sec " +
+                                                                          "(SD = " + Math.round(sd) + ")."));
                 }
 
                 function test_failed(reason = "")
