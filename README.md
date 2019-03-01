@@ -56,7 +56,7 @@ Wray's thread may send one or more of following messages back to its parent thre
     - Emitted to ask the parent thread to log a given piece of information.
 
 # Performance
-Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [e362182](https://github.com/leikareipa/retro-ngon/tree/e362182d8d5500e73372971ddf9b067fa4dd6ae0) on various platforms. The values given are thousands of samples per second. The browsers are the latest corresponding stable versions at the time.
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [e362182](https://github.com/leikareipa/wray/tree/e362182d8d5500e73372971ddf9b067fa4dd6ae0) on various platforms. The values given are thousands of samples per second. The browsers are the latest corresponding stable versions at the time.
 
 <table>
     <tr>
