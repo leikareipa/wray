@@ -6,9 +6,9 @@ You can view a live sample of the renderer in action at [tarpeeksihyvaesoft.com/
 ### Features
 - Vanilla path-tracing in the browser
 - Immutable data structures, for the most part
-- Uses a top-down BVH tree to accelerate ray&ndash;triangle intersections
+- Top-down BVH tree to accelerate ray&ndash;triangle intersections
 - Renders in a non-UI thread via Web Workers (single-threaded only)
-- A simple message-based interface to communicate with the render thread
+- Simple message-based interface to communicate with the render thread
 
 # Usage
 ### Setting up
@@ -56,7 +56,30 @@ Wray's thread may send one or more of following messages back to its parent thre
     - Emitted to ask the parent thread to log a given piece of information.
 
 # Performance
-(Todo)
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [e362182](https://github.com/leikareipa/retro-ngon/tree/e362182d8d5500e73372971ddf9b067fa4dd6ae0) on various platforms. The values given are thousands of samples per second. The browsers are the latest corresponding stable versions at the time.
+
+<table>
+    <tr>
+        <th align="left"></th>
+        <th align="left">Chrome</th>
+        <th align="left">Firefox</th>
+    </tr>
+    <tr>
+        <th align="left">Xeon E3-1230 v3</th>
+        <td align="center">24</td>
+        <td align="center">11</td>
+    </tr>
+    <tr>
+        <th align="left">Pentium G4560</th>
+        <td align="center">&ndash;</td>
+        <td align="center">&ndash;</td>
+    </tr>
+    <tr>
+        <th align="left">Honor View20</th>
+        <td align="center">&ndash;</td>
+        <td align="center">&ndash;</td>
+    </tr>
+</table>
 
 # Browser compatibility
 Recent (within the last year or so) versions of Chrome and Firefox ought to be compatible. Recent versions of Opera and Safari should likewise be compatible.
