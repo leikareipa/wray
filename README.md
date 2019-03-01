@@ -1,6 +1,8 @@
 # Wray
 A vanilla path tracer written in vanilla JavaScript. Primarily intended as a simple path tracer for use in some of my own projects; but who knows, someone else might derive a benefit from this, as well.
 
+You can view a live sample of the renderer in action at [tarpeeksihyvaesoft.com/s/wray/samples/sample1.html](http://tarpeeksihyvaesoft.com/s/wray/samples/sample1.html).
+
 ### Features
 - Vanilla path-tracing in the browser
 - Immutable data structures, for the most part
