@@ -94,6 +94,7 @@
                     "rendering-failed":(payload)=>
                     {
                         window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+                        test_failed(payload.reason);
                     },
                     "rendering-finished":(payload)=>
                     {
@@ -129,6 +130,12 @@
 
                     testResultElement.innerHTML = "";
                     testResultElement.appendChild(document.createTextNode("Finished. Average: " + avg + " samples/sec."));
+                }
+
+                function test_failed(reason = "")
+                {
+                    testResultElement.innerHTML = "";
+                    testResultElement.appendChild(document.createTextNode("Oops! The test has failed to run properly. Possible cause: " + reason));
                 }
             }
         </script>
