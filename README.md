@@ -56,7 +56,7 @@ Wray's thread may send one or more of following messages back to its parent thre
     - Emitted to ask the parent thread to log a given piece of information.
 
 # Performance
-Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [e362182](https://github.com/leikareipa/wray/tree/e362182d8d5500e73372971ddf9b067fa4dd6ae0) on various platforms. The values given are thousands of samples per second. The browsers are the latest corresponding stable versions at the time.
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
 
 <table>
     <tr>
@@ -66,8 +66,8 @@ Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as
     </tr>
     <tr>
         <th align="left">Xeon E3-1230 v3</th>
-        <td align="center">24</td>
-        <td align="center">11</td>
+        <td align="center">25 (3.46)</td>
+        <td align="center">12 (0.18)</td>
     </tr>
     <tr>
         <th align="left">Pentium G4560</th>
@@ -76,7 +76,7 @@ Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as
     </tr>
     <tr>
         <th align="left">Honor View20</th>
-        <td align="center">&ndash;</td>
+        <td align="center">21 (1.24)</td>
         <td align="center">&ndash;</td>
     </tr>
 </table>
