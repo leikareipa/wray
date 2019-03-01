@@ -192,12 +192,12 @@ function render(ms = 1000)
     }
     else
     {
-        const failReason = "";
-        if (!sceneBVH) reason += "Invalid BVH tree. ";
-        if (!renderSurface) reason += "Invalid render surface. ";
-        if (Wray.assertionFailedFlag) reason += "Assertion failed. ";
+        const failReasons = [];
+        if (!sceneBVH) failReasons.push("Invalid BVH tree");
+        if (!renderSurface) failReasons.push("Invalid render surface");
+        if (Wray.assertionFailedFlag) failReasons.push("Assertion failure had been flagged");
 
-        postMessage(Wray.message.renderingFailed(failReason));
+        postMessage(Wray.message.renderingFailed(failReasons.join(" & ")));
     }
 }
 
