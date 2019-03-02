@@ -82,7 +82,7 @@ In this instance, Wray will be instructed to load the mesh contained in `assets/
 Note that only one mesh can be active at a time, so you'd include your entire scene in that file.
 
 # Performance
-Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses &ndash; higher values of deviation indicate less stable performance across time. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
 
 <table>
     <tr>
