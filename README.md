@@ -82,7 +82,7 @@ In this instance, Wray will be instructed to load the mesh contained in `assets/
 Note that only one mesh can be active at a time, so you'd include your entire scene in that file.
 
 # Performance
-Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses &ndash; higher values of deviation indicate less stable performance across time. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses &ndash; higher values of deviation relative to the base performance indicate less stable performance across time. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
 
 <table>
     <tr>
@@ -92,17 +92,22 @@ Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as
     </tr>
     <tr>
         <th align="left">Xeon E3-1230 v3</th>
-        <td align="center">25 (3.46)</td>
-        <td align="center">12 (0.18)</td>
+        <td align="center">28 (3.22)</td>
+        <td align="center">11 (0.01)</td>
     </tr>
     <tr>
         <th align="left">Pentium G4560</th>
-        <td align="center">&ndash;</td>
-        <td align="center">&ndash;</td>
+        <td align="center">22 (6.05)</td>
+        <td align="center">12 (0.01)</td>
     </tr>
     <tr>
         <th align="left">Honor View20</th>
         <td align="center">21 (1.24)</td>
+        <td align="center">&ndash;</td>
+    </tr>
+    <tr>
+        <th align="left">Huawei T1-A21L</th>
+        <td align="center">2 (0.37)</td>
         <td align="center">&ndash;</td>
     </tr>
 </table>
