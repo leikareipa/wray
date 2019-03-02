@@ -55,6 +55,32 @@ Wray's thread may send one or more of following messages back to its parent thre
 - `log`
     - Emitted to ask the parent thread to log a given piece of information.
 
+### 3d models
+At the moment, Wray uses its own format for 3d models, and is unable to directly import such data from other formats. To work around this, first export your scenes into the Wavefront .obj format, then use the tool provided under [tools/obj2wm/](tools/obj2wm/) to convert the .obj into Wray's format.
+
+Below is an example of roughly what Wray's 3d mesh format looks like. You can also view a more practical example in [samples/assets/sample1/monkey.wray-mesh.js](samples/assets/sample1/monkey.wray-mesh.js).
+```
+const cubeMesh = function(scale = Wray.vector3(1, 1, 1))
+{
+    // Materials, etc. are defined here...
+
+    return [/* A list of the mesh's triangles.*/];
+}
+```
+In other words, the format defines a JavaScript function that returns as an array the mesh's triangles.
+
+Once converted into Wray's format, a 3d mesh can be loaded into Wray by passing the `meshFile` property as payload with the `assignSettings` message to Wray's worker thread; a practical example of which is given in [samples/sample1.html](samples/sample1.html). The property might be defined like so:
+```
+meshFile:
+{
+    filename: "assets/cube.wray-mesh.js",
+    initializer: "cubeMesh()"
+}
+```
+In this instance, Wray will be instructed to load the mesh contained in `assets/cube.wray-mesh.js` by calling the function `cubeMesh()`, defined in the file and returning an array of the mesh's triangles.
+
+Note that only one mesh can be active at a time, so you'd include your entire scene in that file.
+
 # Performance
 Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
 
