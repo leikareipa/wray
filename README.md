@@ -86,9 +86,9 @@ Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as
 
 <table>
     <tr>
-        <th align="left"></th>
-        <th align="left">Chrome</th>
-        <th align="left">Firefox</th>
+        <th align="center"></th>
+        <th align="center">Chrome</th>
+        <th align="center">Firefox</th>
     </tr>
     <tr>
         <th align="left">Xeon E3-1230 v3</th>
