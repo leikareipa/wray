@@ -17,8 +17,8 @@
         <title>Performance test #1: render speed - Wray</title>
     </head>
     <body>
-        <script src="../js/wray/wray.js"></script>
-        <script src="../js/wray/message.js"></script>
+        <script src="../../js/wray/wray.js"></script>
+        <script src="../../js/wray/message.js"></script>
         <script>
             // For how many milliseconds, roughly, to let the test run in total.
             const testTimeMs = 120000;
@@ -39,7 +39,7 @@
             const startTime = performance.now();
 
             // Initialize Wray, and start the test.
-            let wrayThread = new Worker("../js/wray/main-thread.js");
+            let wrayThread = new Worker("../../js/wray/main-thread.js");
             {
                 wrayThread.onmessage = (message)=>
                 {

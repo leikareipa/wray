@@ -17,8 +17,8 @@
         <title>Performance test #2: inter-thread pixel buffer transfer speed - Wray</title>
     </head>
     <body>
-        <script src="../js/wray/wray.js"></script>
-        <script src="../js/wray/message.js"></script>
+        <script src="../../js/wray/wray.js"></script>
+        <script src="../../js/wray/message.js"></script>
         <script>
             /*
              * Tests Wray's pixel buffer transfer speed between the window thread and Wray's worker
@@ -50,7 +50,7 @@
             // calculate the time taken once the test finishes.
             let startTime = 0;
 
-            wrayThread = new Worker("../js/wray/main-thread.js");
+            wrayThread = new Worker("../../js/wray/main-thread.js");
 
             wrayThread.onmessage = (message)=>
             {
