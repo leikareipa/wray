@@ -81,38 +81,27 @@ In this instance, Wray will be instructed to load the mesh contained in `assets/
 
 Note that only one mesh can be active at a time, so you'd include your entire scene in that file.
 
-# Performance
-Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses &ndash; higher values of deviation relative to the base performance indicate less stable performance across time. The browsers are the latest corresponding stable versions at the time. A dash indicates that the test has not been run.
+# Project status
+Wray is currently in pre-alpha, and at the moment has no specific schedule for entering alpha. It's being developed whenever.
 
-<table>
-    <tr>
-        <th align="center"></th>
-        <th align="center">Chrome</th>
-        <th align="center">Firefox</th>
-    </tr>
-    <tr>
-        <th align="left">Xeon E3-1230 v3</th>
-        <td align="center">28 (3.22)</td>
-        <td align="center">11 (0.01)</td>
-    </tr>
-    <tr>
-        <th align="left">Pentium G4560</th>
-        <td align="center">22 (6.05)</td>
-        <td align="center">12 (0.01)</td>
-    </tr>
-    <tr>
-        <th align="left">Honor View20</th>
-        <td align="center">21 (1.24)</td>
-        <td align="center">&ndash;</td>
-    </tr>
-    <tr>
-        <th align="left">Huawei T1-A21L</th>
-        <td align="center">2 (0.37)</td>
-        <td align="center">&ndash;</td>
-    </tr>
-</table>
-
-# Browser compatibility
+### Browser compatibility
 Recent (within the last year or so) versions of Chrome and Firefox ought to be compatible. Recent versions of Opera and Safari should likewise be compatible.
 
 Internet Explorer and Edge are not compatible.
+
+### Performance
+Below are results from [perf-tests/perftest1.html](perf-tests/perftest1.html) as of [858a5bf](https://github.com/leikareipa/wray/tree/858a5bf9ed8ea06a0fd8de5f96aee112ca53aac9) on various platforms. The values given are thousands of samples per second, with standard deviations in parentheses &ndash; higher values of deviation relative to the base performance indicate less stable performance across time. The browsers are the latest corresponding stable versions at the time. An empty cell indicates that the corresponding test has not been run.
+
+|                 | Chrome    | Firefox   |
+| --------------- |:---------:|:---------:|
+| Xeon E3-1230 v3 | 28 (3.22) | 11 (0.01) |
+| Pentium G4560   | 22 (6.05) | 11 (0.01) |
+| Honor View20    | 21 (1.24) |           |
+| Huawei T1-A21L  | 2 (0.37)  |           |
+
+# Authors and credits
+Wray is being developed by the one-man Tarpeeksi Hyvae Soft (see on [GitHub](https://github.com/leikareipa) and the [Web](http://www.tarpeeksihyvaesoft.com)).
+
+Ray&ndash;triangle intersection testing ([js/wray/ray.js](js/wray/ray.js):intersect_triangle) is adapted from code provided in Moller & Trumbore 1997: "Fast, minimum storage ray/triangle intersection".
+
+Ray&ndash;AABB intersection testing ([js/wray/ray.js](js/wray/ray.js):intersect_aabb) is adapted from an implementation by [Tavian Barnes](https://tavianator.com/fast-branchless-raybounding-box-intersections/).

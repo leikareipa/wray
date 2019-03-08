@@ -54,7 +54,7 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
 
         // Returns the ray's distance to its corresponding intersection point on the given triangle;
         // or null if the ray doesn't intersect the triangle.
-        // Adapted from Moller & Trumbore 2005: "Fast, minimum storage ray/triangle intersection".
+        // Adapted from Moller & Trumbore 1997: "Fast, minimum storage ray/triangle intersection".
         intersect_triangle: function(triangle = Wray.triangle())
         {
             const ray = this;
