@@ -80,7 +80,7 @@ wrayThread.messageCallbacks =
             }
 
             wrayThread.postMessage(Wray.message.assignSettings(sceneSettings));
-            wrayThread.postMessage(Wray.message.render(1000));
+            wrayThread.postMessage(Wray.message.render(1));
         })
         .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
                                     "\" returned with error \"" + error + "\"."));
