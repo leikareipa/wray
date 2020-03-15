@@ -11,7 +11,7 @@
 
 // Include Wray's code.
 importScripts("../../js/wray/wray.js");
-importScripts("../../js/wray/message.js");
+importScripts("../../js/wray/thread-message.js");
 importScripts("../../js/wray/assert.js");
 importScripts("../../js/wray/log.js");
 importScripts("../../js/wray/matrix44.js");
@@ -30,8 +30,13 @@ importScripts("../../js/wray/bvh.js");
 let renderWidth = 2;
 let renderHeight = 2;
 let renderSurface = Wray.surface(renderWidth, renderHeight);
-let camera = Wray.camera(Wray.vector3(0, 0, 0), Wray.vector3(0, 0, 1), Wray.vector3(0, 0, 0), renderSurface, 17, true);
 let sceneBVH = null;
+let camera = Wray.camera(Wray.vector3(0, 0, 0),
+                         Wray.vector3(0, 0, 1),
+                         Wray.vector3(0, 0, 0),
+                         renderSurface,
+                         17,
+                         true);
 
 // Will contain as strings the filenames/paths of all the mesh files that we've been asked
 // to load in by the user. This list can then be inspected to make sure we don't unnecessarily
@@ -44,36 +49,29 @@ const meshFilesLoaded = [];
 // Handles messages sent us by the parent thread.
 onmessage = (message)=>
 {
-    const payload = message.data.payload;
+    message = message.data;
+    const payload = message.payload;
 
-    switch (message.data.messageId)
+    switch (message.name)
     {
         // Render for the given number of milliseconds. During this time, this thread won't respond
         // to messages; but any such messages will likely be queued for when the rendering is finished.
-        case "render":
+        case Wray.thread_message.to.marshal.render().name:
         {
             render(payload.durationMs);
             
             break;
         }
 
-        case "upload-rendering":
+        case Wray.thread_message.to.marshal.uploadRenderBuffer().name:
         {
             upload_image_buffer();
 
             break;
         }
 
-        // An echo to test postMessage()'s roundtrip delay between this and the parent thread.
-        case "ping":
-        {
-            postMessage(Wray.message.pingResponse(payload.timestamp));
-
-            break;
-        }
-
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
-        case "assign-settings":
+        case Wray.thread_message.to.marshal.assignRenderSettings().name:
         {
             if (typeof payload.epsilon !== "undefined")
             {
@@ -151,13 +149,12 @@ function upload_image_buffer()
 {
     if (!renderSurface || Wray.assertionFailedFlag)
     {
-        postMessage(Wray.message.renderingUpload({pixels:null}));
+        postMessage(Wray.thread_message.from.marshal.renderBuffer({pixels:null}));
     }
     else
     {
         const {pixelArray, width, height, bpp} = renderSurface.as_transferable_pixel_array();
-        postMessage(Wray.message.renderingUpload({pixels:pixelArray.buffer, width, height, bpp}),
-                                                 [pixelArray.buffer]);
+        postMessage(Wray.thread_message.from.marshal.renderBuffer({pixels:pixelArray.buffer, width, height, bpp}), [pixelArray.buffer]);
     }
 }
 
@@ -187,8 +184,7 @@ function render(ms = 1000)
         }
 
         // Send the results of the rendering back to the parent thread.
-        postMessage(Wray.message.renderingFinished(renderSurface.average_sample_count(),
-                                                   Math.floor(numSamples * (1000 / (Date.now() - startTime)))));
+        postMessage(Wray.thread_message.from.marshal.renderingFinished(renderSurface.average_sample_count(), Math.floor(numSamples * (1000 / (Date.now() - startTime)))));
     }
     else
     {
@@ -197,8 +193,8 @@ function render(ms = 1000)
         if (!renderSurface) failReasons.push("Invalid render surface");
         if (Wray.assertionFailedFlag) failReasons.push("Assertion failure had been flagged");
 
-        postMessage(Wray.message.renderingFailed(failReasons.join(" & ")));
+        postMessage(Wray.thread_message.from.marshal.renderingFailed(failReasons.join(" & ")));
     }
 }
 
-postMessage(Wray.message.finishedInitializing());
+postMessage(Wray.thread_message.from.marshal.threadInitialized());

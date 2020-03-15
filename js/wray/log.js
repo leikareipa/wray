@@ -19,6 +19,6 @@ Wray.log = function(string = "")
     }
     else
     {
-        postMessage(Wray.message.log(string));
+        postMessage(Wray.thread_message.log(string));
     }
 }

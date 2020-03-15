@@ -37,129 +37,144 @@
 // Initialize Wray by creating a thread for it to run in.
 // Note that we don't yet tell it to start the rendering; we'll do that later down the file, here.
 Wray.log("Initializing...");
-wrayThread = new Worker("../js/wray/main-thread.js");
+wrayThread = new Worker("../js/wray/thread-marshal.js");
 
 // Maps the message handlers from above to incoming messages from Wray's thread.
 wrayThread.onmessage = (message)=>
 {
-    const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
-    Wray.assert((typeof messageHandler !== "undefined"), "Can't find the message handler for '" + message.data.messageId + "'.");
+    message = message.data;
+    const payload = message.payload;
 
-    messageHandler(message.data.payload);
-};
-
-// Establish handlers for the various messages Wray may send us from its thread.
-wrayThread.messageCallbacks =
-{
-    // Once Wray's thread has finished setting itself up, it'll emit this message.
-    "wray-has-initialized":()=>
+    switch (message.name)
     {
-        const sceneFileName = "./assets/sample1/monkey.wray-scene.json";
-
-        Wray.log("Loading the scene from '" + sceneFileName + "'...");
-        fetch(sceneFileName)
-        .then((response)=>response.json())
-        .then((sceneSettings)=>
+        case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
-            sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
+            const sceneFileName = "./assets/sample1/monkey.wray-scene.json";
 
-            // If a mesh's filename was given, assume it's relative and needs an absolute
-            // address path prefixed.
-            if (typeof sceneSettings.meshFile !== "undefined" &&
-                typeof sceneSettings.meshFile.filename !== "undefined")
+            Wray.log("Loading the scene from '" + sceneFileName + "'...");
+            
+            fetch(sceneFileName)
+            .then((response)=>response.json())
+            .then((sceneSettings)=>
             {
-                // Convert Wray's URL into a base path.
-                // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
-                const lastSlashIdx = window.location.pathname.lastIndexOf('/');
-                Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
-                const basePath = (window.location.origin +
-                                  window.location.pathname.substring(0, lastSlashIdx+1));
+                sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
+                sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
 
-                sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
-            }
-
-            wrayThread.postMessage(Wray.message.assignSettings(sceneSettings));
-            wrayThread.postMessage(Wray.message.render(1));
-        })
-        .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
-                                    "\" returned with error \"" + error + "\"."));
-    },
-    // Will be emitted when Wray's thread is sending us its current frame buffer's contents as a
-    // pixel array. We'll then copy its data into a HTML5 canvas for display.
-    "rendering-upload":(payload)=>
-    {
-        if (payload.pixels)
-        {
-            Wray.assert(((payload.width * payload.height * (payload.bpp/8)) === payload.pixels.byteLength),
-                        "Invalid pixel buffer dimensions.");
-
-            Wray.assert((payload.bpp === 32), "Expected a 32-bit pixel buffer.");
-
-            const width = payload.width;
-            const height = payload.height;
-            const pixelBufferView = new Uint8Array(payload.pixels);
-
-            // Copy the rendering's pixels onto the canvas element.
-            {
-                const uiWidth = Math.min(width*Wray.ui.renderDownscale, document.documentElement.clientWidth-8);
-                const uiHeight = uiWidth * (height/width);
-
-                // If this is our first time receiving data from the renderer, create
-                // an animation that slides the canvas onto the screen.
-                if (Wray.ui.wrayIsInitializing) Wray.ui.reveal_ui();
-
-                Wray.ui.elements.rendererCanvas.setAttribute("width", width);
-                Wray.ui.elements.rendererCanvas.setAttribute("height", height);
-
-                Wray.ui.elements.statusContainer.style.width = uiWidth-40 + "px";
-                Wray.ui.elements.rendererCanvas.style.width = uiWidth + "px";
-                Wray.ui.elements.rendererCanvas.style.height = uiHeight + "px";
-
-                const pixelMap = new ImageData(width, height);
-                for (let i = 0; i < (width * height * 4); i++)
+                // If a mesh's filename was given, assume it's relative and needs an absolute
+                // address path prefixed.
+                if (typeof sceneSettings.meshFile !== "undefined" &&
+                    typeof sceneSettings.meshFile.filename !== "undefined")
                 {
-                    pixelMap.data[i] = pixelBufferView[i];
+                    // Convert Wray's URL into a base path.
+                    // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
+                    const lastSlashIdx = window.location.pathname.lastIndexOf('/');
+                    Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
+                    const basePath = (window.location.origin +
+                                    window.location.pathname.substring(0, lastSlashIdx+1));
+
+                    sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                 }
 
-                const renderContext = Wray.ui.elements.rendererCanvas.getContext("2d");
-                if (renderContext) renderContext.putImageData(pixelMap, 0, 0);
-                else Wray.log("Failed to obtain the canvas's render context; can't display the rendering.");
-            }
+                wrayThread.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
+                wrayThread.postMessage(Wray.thread_message.to.marshal.render(1));
+            })
+            .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
+                                        "\" returned with error \"" + error + "\"."));
+
+            break;
         }
 
-        // Ask Wray to keep rendering. It'll send us the frame buffer again when it's done.
-        if (!Wray.assertionFailedFlag) wrayThread.postMessage(Wray.message.render(2000));
-    },
-    "log":(payload)=>
-    {
-        Wray.log(payload.string);
-    },
-    "assert":(payload)=>
-    {
-        Wray.assert(payload.condition, payload.failMessage);
-    },
-    "rendering-failed":(payload)=>
-    {
-        window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
-    },
-    "rendering-finished":(payload)=>
-    {
-        Wray.ui.elements.rendererStatus.innerHTML = "";
-        Wray.ui.elements.rendererStatus.appendChild(document.createTextNode("~" + payload.avg_samples_per_pixel + " sample" +
-                                                            (payload.avg_samples_per_pixel === 1? "" : "s") +
-                                                            " per pixel (" + Math.floor(payload.samples_per_second/1000) +
-                                                            "k samples/sec)"));
+        // Copy the render buffer's pixel data data into a HTML5 canvas for display.
+        case Wray.thread_message.from.marshal.renderBuffer().name:
+        {
+            if (payload.pixels)
+            {
+                Wray.assert(((payload.width * payload.height * (payload.bpp/8)) === payload.pixels.byteLength),
+                            "Invalid pixel buffer dimensions.");
 
-        wrayThread.postMessage(Wray.message.uploadRendering());
-    },
+                Wray.assert((payload.bpp === 32), "Expected a 32-bit pixel buffer.");
+
+                const width = payload.width;
+                const height = payload.height;
+                const pixelBufferView = new Uint8Array(payload.pixels);
+
+                // Copy the rendering's pixels onto the canvas element.
+                {
+                    const uiWidth = Math.min(width*Wray.ui.renderDownscale, document.documentElement.clientWidth-8);
+                    const uiHeight = uiWidth * (height/width);
+
+                    // If this is our first time receiving data from the renderer, create
+                    // an animation that slides the canvas onto the screen.
+                    if (Wray.ui.wrayIsInitializing) Wray.ui.reveal_ui();
+
+                    Wray.ui.elements.rendererCanvas.setAttribute("width", width);
+                    Wray.ui.elements.rendererCanvas.setAttribute("height", height);
+
+                    Wray.ui.elements.statusContainer.style.width = uiWidth-40 + "px";
+                    Wray.ui.elements.rendererCanvas.style.width = uiWidth + "px";
+                    Wray.ui.elements.rendererCanvas.style.height = uiHeight + "px";
+
+                    const pixelMap = new ImageData(width, height);
+                    for (let i = 0; i < (width * height * 4); i++)
+                    {
+                        pixelMap.data[i] = pixelBufferView[i];
+                    }
+
+                    const renderContext = Wray.ui.elements.rendererCanvas.getContext("2d");
+                    if (renderContext) renderContext.putImageData(pixelMap, 0, 0);
+                    else Wray.log("Failed to obtain the canvas's render context; can't display the rendering.");
+                }
+            }
+
+            // Ask Wray to keep rendering. It'll send us the frame buffer again when it's done.
+            if (!Wray.assertionFailedFlag) wrayThread.postMessage(Wray.thread_message.to.marshal.render(200));
+
+            break;
+        }
+
+        case Wray.thread_message.log().name:
+        {
+            Wray.log(payload.string);
+            
+            break;
+        }
+
+        case Wray.thread_message.assert().name:
+        {
+            Wray.assert(payload.condition, payload.failMessage);
+            
+            break;
+        }
+
+        case Wray.thread_message.from.marshal.renderingFailed().name:
+        {
+            window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+
+            break;
+        }
+
+        case Wray.thread_message.from.marshal.renderingFinished().name:
+        {
+            Wray.ui.elements.rendererStatus.innerHTML = "";
+            Wray.ui.elements.rendererStatus.appendChild(document.createTextNode("~" + payload.avg_samples_per_pixel + " sample" +
+                                                                (payload.avg_samples_per_pixel === 1? "" : "s") +
+                                                                " per pixel (" + Math.floor(payload.samples_per_second/1000) +
+                                                                "k samples/sec)"));
+
+            wrayThread.postMessage(Wray.thread_message.to.marshal.uploadRenderBuffer());
+
+            break;
+        }
+
+        default: Wray.log(`Unknown thread message: ${message.name}`); break;
+    }
 };
 
 Wray.ui = {};
 
 // We'll downscale the image's resolution by this multiplier when rendering it, and upscale
 // it by the same amount for display; resulting in other words in fewer but larger pixels.
-Wray.ui.renderDownscale = 1;
+Wray.ui.renderDownscale = 4;
 
 // Will be set to false once Wray is ready to start rendering.
 Wray.ui.wrayIsInitializing = true;

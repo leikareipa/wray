@@ -20,7 +20,7 @@ This can be done locally, for instance by running `$ php -S localhost:8000` fro
 Samples of Wray in practical use are given in the [samples/](samples/) directory.
 
 ### Communicating with Wray's thread
-As hinted at, above, you use Wray by first spawning it into a separate Web Worker thread (e.g. `wrayThread = new Worker("js/wray/main-thread.js")`), then control it by sending it commands via `wrayThread.postMessage()`. The Wray thread may also send messages back to the parent thread that spawned it. Examples of this in practice can be found under [samples/](samples/), and as explained below.
+As hinted at, above, you use Wray by first spawning it into a separate Web Worker thread (e.g. `wrayThread = new Worker("js/wray/thread-marshal.js")`), then control it by sending it commands via `wrayThread.postMessage()`. The Wray thread may also send messages back to the parent thread that spawned it. Examples of this in practice can be found under [samples/](samples/), and as explained below.
 
 To issue a command, first wrap it in the `Wray.message` object: e.g. `Wray.message.render()` for the command `render`; then send it off via `wrayThread.postMessage()`; e.g. `wrayThread.postMessage(Wray.message.render())`. Note that a command may take one or more input parameters, e.g. `Wray.message.render(1000)`; see [js/wray/message.js](js/wray/message.js) for more info.
 

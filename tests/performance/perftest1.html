@@ -18,7 +18,7 @@
     </head>
     <body>
         <script src="../../js/wray/wray.js"></script>
-        <script src="../../js/wray/message.js"></script>
+        <script src="../../js/wray/thread-message.js"></script>
         <script>
             // For how many milliseconds, roughly, to let the test run in total.
             const testTimeMs = 120000;
@@ -39,27 +39,23 @@
             const startTime = performance.now();
 
             // Initialize Wray, and start the test.
-            let wrayThread = new Worker("../../js/wray/main-thread.js");
+            let wrayThread = new Worker("../../js/wray/thread-marshal.js");
             {
                 wrayThread.onmessage = (message)=>
                 {
-                    const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
+                    message = message.data;
+                    const payload = message.payload;
 
-                    if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.messageId + "'.");
-                    else messageHandler(message.data.payload);
-                };
-
-                wrayThread.messageCallbacks =
-                {
-                    "wray-has-initialized":()=>
+                    switch (message.name)
                     {
-                        const sceneFileName = "./assets/perftest1/monkey.wray-scene.json";
+                        case Wray.thread_message.from.marshal.threadInitialized().name:
+                        {
+                            const sceneFileName = "./assets/perftest1/monkey.wray-scene.json";
 
-                        testResultElement.innerHTML = "";
-                        testResultElement.appendChild(document.createTextNode("Running the test for " + testTimeMs/1000 + " seconds " +
-                                                                              "at " + updateIntervalMs + " ms intervals..."));
+                            testResultElement.innerHTML = "";
+                            testResultElement.appendChild(document.createTextNode(`Running the test for ${testTimeMs/1000} seconds at ${updateIntervalMs} ms intervals...`));
 
-                        fetch(sceneFileName)
+                            fetch(sceneFileName)
                             .then((response)=>response.json())
                             .then((sceneSettings)=>
                             {
@@ -72,40 +68,57 @@
                                     // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
                                     const lastSlashIdx = window.location.pathname.lastIndexOf('/');
                                     const basePath = (window.location.origin +
-                                                    window.location.pathname.substring(0, lastSlashIdx+1));
+                                                      window.location.pathname.substring(0, lastSlashIdx+1));
 
                                     sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                                 }
 
-                                wrayThread.postMessage(Wray.message.assignSettings(sceneSettings));
-                                wrayThread.postMessage(Wray.message.render(updateIntervalMs));
+                                wrayThread.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
+                                wrayThread.postMessage(Wray.thread_message.to.marshal.render(updateIntervalMs));
                             })
                             .catch((error)=>window.alert("Attempt to fetch file \"" + sceneFileName +
-                                                         "\" returned with error \"" + error + "\"."));
-                    },
-                    "log":(payload)=>
-                    {
-                        console.log("Wray:", payload.string);
-                    },
-                    "assert":(payload)=>
-                    {
-                        if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
-                    },
-                    "rendering-failed":(payload)=>
-                    {
-                        window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
-                        test_failed(payload.reason);
-                    },
-                    "rendering-finished":(payload)=>
-                    {
-                        update_results(payload.samples_per_second);
-
-                        if ((performance.now() - startTime) < testTimeMs)
-                        {
-                            wrayThread.postMessage(Wray.message.render(updateIntervalMs));
+                                                        "\" returned with error \"" + error + "\"."));
+                                                            
+                            break;
                         }
-                        else test_finished();
-                    },
+
+                        case Wray.thread_message.log().name:
+                        {
+                            console.log("Wray:", payload.string);
+
+                            break;
+                        }
+
+                        case Wray.thread_message.assert().name:
+                        {
+                            if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
+
+                            break;
+                        }
+
+                        case Wray.thread_message.from.marshal.renderingFailed().name:
+                        {
+                            window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+                            test_failed(payload.reason);
+
+                            break;
+                        }
+
+                        case Wray.thread_message.from.marshal.renderingFinished().name:
+                        {
+                            update_results(payload.samples_per_second);
+
+                            if ((performance.now() - startTime) < testTimeMs)
+                            {
+                                wrayThread.postMessage(Wray.thread_message.to.marshal.render(updateIntervalMs));
+                            }
+                            else test_finished();
+
+                            break;
+                        }
+
+                        default: Wray.log(`Unknown thread message: ${message.name}`); break;
+                    }
                 };
 
                 function update_results(samplesPerSecond = 0)

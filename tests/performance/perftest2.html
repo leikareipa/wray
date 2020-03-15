@@ -18,7 +18,7 @@
     </head>
     <body>
         <script src="../../js/wray/wray.js"></script>
-        <script src="../../js/wray/message.js"></script>
+        <script src="../../js/wray/thread-message.js"></script>
         <script>
             /*
              * Tests Wray's pixel buffer transfer speed between the window thread and Wray's worker
@@ -36,28 +36,73 @@
             const testResultElement = document.createElement("p");
             testResultElement.style.cssText = "display: inline-block; width: 300px; text-align: left;"
             document.body.appendChild(testResultElement);
-            testResultElement.innerHTML = "Initializing Wray...";
+            testResultElement.innerHTML = "Initializing Wray...<br>";
 
             // The resolutions we'll run the tests with (in this order).
             const testResolutions = [{width:160, height:120},
                                      {width:320, height:240},
                                      {width:640, height:480},
                                      {width:1280, height:720},
-                                     {width:2048, height:1080},
-                                     {width:4096, height:2160}];
+                                     {width:1920, height:1080},
+                                     {width:3840, height:2160}];
 
             // Will be set (e.g. with performance.now()) at the start of each test, so we can
             // calculate the time taken once the test finishes.
             let startTime = 0;
 
-            wrayThread = new Worker("../../js/wray/main-thread.js");
+            wrayThread = new Worker("../../js/wray/thread-marshal.js");
 
             wrayThread.onmessage = (message)=>
             {
-                const messageHandler = wrayThread.messageCallbacks[message.data.messageId];
+                message = message.data;
+                const payload = message.payload;
 
-                if (typeof messageHandler !== "function") console.log("Wray:", "No known handler for message '" + message.data.messageId + "'.");
-                else messageHandler(message.data.payload);
+                switch (message.name)
+                {
+                    case Wray.thread_message.from.marshal.threadInitialized().name:
+                    {
+                        test_resolution(testResolutions[0]);
+                        
+                        break;
+                    }
+                    
+                    case Wray.thread_message.log().name:
+                    {
+                        console.log("Wray:", payload.string);
+
+                        break;
+                    }
+
+                    case Wray.thread_message.assert().name:
+                    {
+                        if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
+
+                        break;
+                    }
+
+                    case Wray.thread_message.from.marshal.renderBuffer().name:
+                    {
+                        if (!payload.pixels ||
+                            payload.width !== testResolutions[0].width ||
+                            payload.height !== testResolutions[0].height ||
+                            payload.bpp !== 32)
+                        {
+                            window.alert("Received an invalid render upload.");
+                        }
+                        else
+                        {
+                            const ms = Math.floor(performance.now() - startTime);
+                            testResultElement.innerHTML += " " + ms + " ms.<br>";
+
+                            testResolutions.shift();
+                            test_resolution(testResolutions[0]);
+                        }
+
+                        break;
+                    }
+                    
+                    default: Wray.log(`Unknown thread message: ${message.name}`); break;
+                }
             };
 
             function test_resolution(resolution = {width:0, height:0})
@@ -66,17 +111,17 @@
                 // is called, so if that list's length is 0, all the tests have completed.
                 if (testResolutions.length > 0)
                 {
-                    testResultElement.innerHTML += resolution.width + " x " + resolution.height + "...";
+                    testResultElement.innerHTML += `${resolution.width} x ${resolution.height}:`;
 
                     // Have Wray set the size of its render buffer accordingly, then upload it to us.
                     // Note: There's currently no return message for when the buffer resize has finished, and
                     // we don't want that process to count toward the overall time, so we'll just kludge
                     // it with a timeout and assume the buffer's been resized by the time the timer fires.
-                    wrayThread.postMessage(Wray.message.assignSettings({outputResolution:resolution}));
+                    wrayThread.postMessage(Wray.thread_message.to.marshal.assignRenderSettings({outputResolution:resolution}));
                     setTimeout(()=>
                     {
                         startTime = performance.now();
-                        wrayThread.postMessage(Wray.message.uploadRendering());
+                        wrayThread.postMessage(Wray.thread_message.to.marshal.uploadRenderBuffer());
                     }, 1500)
                 }
                 else
@@ -84,46 +129,6 @@
                     testResultElement.innerHTML += "<br>Done.";
                 }
             }
-
-            wrayThread.messageCallbacks =
-            {
-                "wray-has-initialized":()=>
-                {
-                    testResultElement.innerHTML = "Ping...";
-                    wrayThread.postMessage(Wray.message.ping(performance.now()));
-                },
-                "ping-response":(payload)=>
-                {
-                    testResultElement.innerHTML += " " + Math.floor(performance.now() - payload.timestamp) + " ms.<br>";
-                    test_resolution(testResolutions[0]);
-                },
-                "log":(payload)=>
-                {
-                    console.log("Wray:", payload.string);
-                },
-                "assert":(payload)=>
-                {
-                    if (!payload.condition) window.alert("Wray assertion:", payload.failMessage);
-                },
-                "rendering-upload":(payload)=>
-                {
-                    if (!payload.pixels ||
-                        payload.width !== testResolutions[0].width ||
-                        payload.height !== testResolutions[0].height ||
-                        payload.bpp !== 32)
-                    {
-                        window.alert("Received an invalid render upload.");
-                    }
-                    else
-                    {
-                        const ms = Math.floor(performance.now() - startTime);
-                        testResultElement.innerHTML += " " + ms + " ms.<br>";
-
-                        testResolutions.shift();
-                        test_resolution(testResolutions[0]);
-                    }
-                },
-            };
         </script>
     </body>
 </html>
