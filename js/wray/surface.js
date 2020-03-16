@@ -36,11 +36,11 @@ Wray.surface = function(width = 0, height = 0)
     {
         pixelBuffer.forEach((pixel)=>
         {
-            pixel.red = 0.7;
-            pixel.green = 0.7;
-            pixel.blue = 0.7;
+            pixel.red = 0;
+            pixel.green = 0;
+            pixel.blue = 0;
 
-            pixel.numSamples = 1;
+            pixel.numSamples = 0;
         });
     };
 
@@ -51,23 +51,22 @@ Wray.surface = function(width = 0, height = 0)
 
         wipe: wipe_surface,
 
-        // Returns a Transferable pixel buffer array of this render surface. The array
-        // will contain RGBA values in the range 0..255.
-        as_transferable_pixel_array: function()
+        // Returns a Transferable pixel buffer array of this render surface.
+        transferable_pixel_array: function()
         {
-            const pixelArray = new Uint8Array(width * height * 4);
+            const pixelArray = new Float64Array(width * height * 4);
             pixelBuffer.forEach((pixel)=>
             {
                 const idx = ((pixel.x + pixel.y * width) * 4);
-                const color = this.pixel_color_at(pixel.x, pixel.y).clamped();
+                const color = this.pixel_color_at(pixel.x, pixel.y);
 
-                pixelArray[idx+0] = 255*color.red;
-                pixelArray[idx+1] = 255*color.green;
-                pixelArray[idx+2] = 255*color.blue;
-                pixelArray[idx+3] = 255;
+                pixelArray[idx+0] = color.red;
+                pixelArray[idx+1] = color.green;
+                pixelArray[idx+2] = color.blue;
+                pixelArray[idx+3] = 1;
             });
 
-            return {pixelArray, width, height, bpp:32};
+            return {pixelArray, width, height};
         },
 
         // Returns the average number of samples per pixel on this surface.
@@ -109,8 +108,8 @@ Wray.surface = function(width = 0, height = 0)
             Wray.assert((pixel != null), "Detected an attempt to access an invalid element in the surface color buffer.");
 
             return Wray.color_rgb(pixel.red / (pixel.numSamples || 1),
-                             pixel.green / (pixel.numSamples || 1),
-                             pixel.blue / (pixel.numSamples || 1));
+                                  pixel.green / (pixel.numSamples || 1),
+                                  pixel.blue / (pixel.numSamples || 1));
         },
 
         // Draws the contents of the surface's pixel buffer onto the given HTML5 canvas.

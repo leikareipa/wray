@@ -4,61 +4,53 @@ body
     color: rgb(70, 70, 70);
     font-variant: small-caps;
     font-size: 90%;
+    padding: 20px;
     margin: 0;
-    padding: 0;
     text-align: center;
-    margin-top: 50px;
-    margin-bottom: 30px;
     font-family: "Roboto", sans-serif;
-
-    /* Initially hidden; will be reverted to normal once rendering starts.*/
-    /* This is done to hide the UI past the edge of the screen while initializing.*/
-    overflow: hidden;
 }
 
 /* For the HTML5 canvas we'll render into.*/
 #wray-render-target
 {
+    box-shadow: 0 4px 7px -5px rgba(0, 0, 0, 0.7);
     background-color: dimgray;
-    box-shadow: 0 2px 20px -4px rgba(0, 0, 0, 0.4);
-    border-radius: 4px;
+    border-radius: 0px;
     margin: 0px;
     position: relative;
     z-index: 3;
-
-    /* Will be unhidden when rendering begins.*/
-    visibility: hidden;
-    transition: left 0.4s ease-out;
-    left: 200%;
+    display: inline-block;
 
     /* Pixelated upscale.*/
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: -o-crisp-edges;
     image-rendering: -webkit-crisp-edges;
+
+    /* Will be unhidden when rendering begins.*/
+    display: none;
 }
 
 #wray-status-container
 {
     background-color: rgb(80, 177, 129);
     color: rgb(37, 48, 40);
-    border-radius: 5px;
-    width:400px;
+    border-radius: 0 0 5px 5px;
+    width: 400px;
     display: inline-block;
-    padding: 18px 0 13px 0;
-    margin-top: -10px;
+    padding: 17px 0;
     position: relative;
     z-index: 1;
+    margin: 0;
+    margin-top: -4px;
 
     /* Will be unhidden when rendering begins.*/
-    visibility: hidden;
-    transition: left 0.4s ease-out;
-    left: 200%;
+    display: none;
 }
 
 #wray-init-notice
 {
-    color: #d8d8d8;
+    color: white;
     font-size: 110%;
     letter-spacing: 0px;
     font-weight: bold;
@@ -73,8 +65,8 @@ body
 #wray-init-spinner /* Spins to indicate that Wray is initializing.*/
 {
     border: 5px solid transparent;
-    border-right: 5px solid #d8d8d8;
-    border-left: 5px solid #d8d8d8;
+    border-right: 5px solid white;
+    border-left: 5px solid white;
     border-radius: 50%;
     width: 35px;
     height: 35px;
@@ -82,23 +74,20 @@ body
     display: inline-block;
     margin-bottom: 14px;
 }
-#wray-render-spinner /* Spins to indicate that rendering is ongoing.*/
-{
-    border: 10px solid #64be94;
-    border-top: 10px solid #c4dac4;
-    border-radius: 50%;
-    width: 23px;
-    height: 23px;
-    animation: spin 5s linear infinite;
-    margin-bottom: 4px;
-    margin-top: -3px;
 
-    display: inline-block;
-    position: relative;
-    z-index: 2;
-}
 @keyframes spin
 {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(359deg); }
+}
+
+
+@media only screen and (max-width: 1280px)
+{
+    body
+    {
+        background-color: rgb(80, 177, 129);
+        padding: 0;
+        margin: 0;
+    }
 }

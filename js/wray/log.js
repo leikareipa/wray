@@ -8,7 +8,9 @@
 
 Wray.log = function(string = "")
 {
-    if ((typeof string !== "string") || (string.length < 1))
+    string = String(string);
+
+    if (string.length < 1)
     {
         Wray.assert(0, "Empty log messages are discouraged.");
     }

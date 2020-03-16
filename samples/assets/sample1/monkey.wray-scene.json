@@ -22,5 +22,6 @@
     },
     "maxRayDepth":10,
     "epsilon":0.000001,
-    "wipeSurface":true
+    "wipeSurface":true,
+    "renderThreads":"all"
 }

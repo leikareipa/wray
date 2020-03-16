@@ -4,7 +4,7 @@ A vanilla path tracer written in vanilla JavaScript. Primarily intended as a sim
 You can view a live sample of the renderer in action at [tarpeeksihyvaesoft.com/s/wray/samples/sample1.html](http://tarpeeksihyvaesoft.com/s/wray/samples/sample1.html).
 
 ### Features
-- Vanilla path-tracing in the browser
+- Vanilla path tracing in the browser
 - Immutable data structures, for the most part
 - Top-down BVH tree to accelerate ray&ndash;triangle intersections
 - Renders in a non-UI thread via Web Workers (single-threaded only)

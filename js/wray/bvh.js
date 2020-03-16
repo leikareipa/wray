@@ -55,7 +55,6 @@ Wray.bvh = function(scene = [Wray.triangle()])
 {
     Wray.assert((scene instanceof Array), "Expected an array of triangles for creating a BVH.");
 
-    Wray.log("Building a BVH for " + scene.length + " triangles...")
     const startTime = Date.now();
 
     // An AABB encompassing the entire scene and from which further splits are made.
@@ -118,12 +117,12 @@ Wray.bvh = function(scene = [Wray.triangle()])
     })(baseAABB, scene, 1);
 
     const endTime = Date.now();
-    Wray.log("BVH construction took " + (endTime-startTime)/1000 + " seconds.");
 
     const publicInterface = Object.freeze(
     {
         base: baseAABB,
         triangles: Object.freeze(scene),
+        constructTimeMs: (endTime - startTime),
 
         // Returns the count of triangles in the BVH's leaf nodes.
         num_triangles: function()

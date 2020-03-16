@@ -29,8 +29,8 @@ importScripts("../../js/wray/bvh.js");
 // by the user, later, via postMessage() from the parent thread.
 let renderWidth = 2;
 let renderHeight = 2;
-let renderSurface = Wray.surface(renderWidth, renderHeight);
 let sceneBVH = null;
+let renderSurface = Wray.surface(renderWidth, renderHeight);
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
                          Wray.vector3(0, 0, 0),
@@ -46,7 +46,97 @@ let camera = Wray.camera(Wray.vector3(0, 0, 0),
 ///          same file.
 const meshFilesLoaded = [];
 
-// Handles messages sent us by the parent thread.
+let numWorkers = 1;
+let numWorkersStarted = 0;
+let numWorkersReady = 0;
+let workers = [];
+
+let workerRenderBuffers = [];
+let numWorkersRendered = 0;
+let averageSampleCount = 0;
+let samplesPerSecond = 0;
+
+// Handles messages sent by worker threads.
+function worker_message_handler(message)
+{
+    message = message.data;
+    const payload = message.payload;
+
+    switch (message.name)
+    {
+        case Wray.thread_message.from.worker.renderBuffer().name:
+        {
+            workerRenderBuffers[payload.workerId] = payload;
+
+            if (++numWorkersRendered == numWorkers)
+            {
+                for (const renderBuffer of workerRenderBuffers)
+                {
+                    const pixelData = new Float64Array(renderBuffer.pixels);
+
+                    for (let y = 0; y < renderHeight; y++)
+                    {
+                        for (let x = 0; x < renderWidth; x++)
+                        {
+                            const idx = ((x + y * renderWidth) * 4);
+                            const color = Wray.color_rgb(pixelData[idx+0],
+                                                         pixelData[idx+1],
+                                                         pixelData[idx+2]);
+
+                            // If there are no light-bringing samples of this pixel.
+                            if (!color.red && !color.green && !color.blue) continue;
+
+                            renderSurface.accumulate_to_pixel_at(x, y, color);
+                        }
+                    }
+                }
+
+                renderSurface.clamp_accumulated();
+
+                postMessage(Wray.thread_message.from.marshal.renderingFinished(averageSampleCount, samplesPerSecond));
+
+                workerRenderBuffers.length = 0;
+                numWorkersRendered = 0;
+                averageSampleCount = 0;
+                samplesPerSecond = 0;
+            }
+
+            break;
+        }
+
+        case Wray.thread_message.from.worker.readyToRender().name:
+        {
+            if (++numWorkersReady == numWorkers)
+            {
+                postMessage(Wray.thread_message.log("Threads are ready to render."));
+                postMessage(Wray.thread_message.from.marshal.readyToRender());
+            }
+
+            break;
+        }
+
+        case Wray.thread_message.from.worker.renderingFinished().name:
+        {
+            averageSampleCount += payload.avgSamplesPerPixel;
+            samplesPerSecond += payload.samplesPerSecond;
+
+            workers[payload.workerId].postMessage(Wray.thread_message.to.worker.uploadRenderBuffer());
+            
+            break;
+        }
+
+        case Wray.thread_message.log().name:
+        {
+            postMessage(Wray.thread_message.log(payload.string));
+
+            break;
+        }
+    }
+
+    return;
+}
+
+// Handles messages sent by the parent thread.
 onmessage = (message)=>
 {
     message = message.data;
@@ -58,7 +148,12 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
-            render(payload.durationMs);
+          //  render(payload.durationMs);
+
+            for (const worker of workers)
+            {
+                worker.postMessage(Wray.thread_message.to.worker.render(payload.durationMs));
+            }
             
             break;
         }
@@ -76,6 +171,25 @@ onmessage = (message)=>
             if (typeof payload.epsilon !== "undefined")
             {
                 Wray.epsilon = payload.epsilon;
+            }
+
+            // Spawn workers.
+            {
+                switch (String(payload.renderThreads || "all").toLowerCase())
+                {
+                    case "all": numWorkers = navigator.hardwareConcurrency; break;
+                    case "half": numWorkers = (navigator.hardwareConcurrency / 2); break;
+                    default: numWorkers = Math.max(0, Math.min(navigator.hardwareConcurrency, (Number(payload.renderThreads) || 1))); break;
+                }
+                
+                workers = new Array(numWorkers).fill().map((w, idx)=>
+                {
+                    const worker = new Worker("thread-worker.js");
+                    worker.onmessage = worker_message_handler;
+                    worker.id = idx;
+
+                    return worker;
+                });
             }
 
             if (typeof payload.meshFile !== "undefined")
@@ -117,12 +231,15 @@ onmessage = (message)=>
                 if (typeof payload.outputResolution.height !== "undefined") renderHeight = Math.floor(payload.outputResolution.height);
 
                 renderSurface = Wray.surface(renderWidth, renderHeight);
-                camera = Wray.camera(camera.dir, camera.pos, renderSurface, camera.fov, camera.antialiasing);
             }
 
             if (typeof payload.camera !== "undefined")
             {
-                let dir = camera.dir, pos = camera.pos, rot = camera.rot, fov = camera.fov, antialiasing = camera.antialiasing;
+                let dir = camera.dir,
+                    pos = camera.pos,
+                    rot = camera.rot,
+                    fov = camera.fov,
+                    antialiasing = camera.antialiasing;
 
                 if (typeof payload.camera.dir !== "undefined") dir = Wray.vector3(...payload.camera.dir).normalized();
                 if (typeof payload.camera.rot !== "undefined") rot = Wray.vector3(...payload.camera.rot);
@@ -133,13 +250,31 @@ onmessage = (message)=>
                 camera = Wray.camera(pos, dir, rot, renderSurface, fov, antialiasing);
             }
 
-            if (typeof payload.flattenSurface !== "undefined" && payload.flattenSurface) renderSurface.clamp_accumulated();
-            if (typeof payload.wipeSurface !== "undefined" && payload.wipeSurface) renderSurface.wipe();
+            for (const worker of workers)
+            {
+                worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
+                    resolution:
+                    {
+                        width: renderWidth,
+                        height: renderHeight,
+                    },
+                    camera:
+                    {
+                        dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
+                        pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
+                        rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
+                        fov: camera.fov,
+                        antialiasing: camera.antialiasing,
+                    },
+                    meshFile: payload.meshFile,
+                    workerId: worker.id,
+                }));
+            }
 
             break;
         }
 
-        default: Wray.log("Unknown message '" + message.data.messageId + "' sent to worker thread. Ignoring it."); break;
+        default: Wray.log(`Unknown thread message: ${message.name}`); break;
     }
 }
 
@@ -153,47 +288,8 @@ function upload_image_buffer()
     }
     else
     {
-        const {pixelArray, width, height, bpp} = renderSurface.as_transferable_pixel_array();
-        postMessage(Wray.thread_message.from.marshal.renderBuffer({pixels:pixelArray.buffer, width, height, bpp}), [pixelArray.buffer]);
-    }
-}
-
-// Sample the rendering for x milliseconds.
-function render(ms = 1000)
-{
-    // If we have a valid context for rendering.
-    if (sceneBVH && renderSurface && !Wray.assertionFailedFlag)
-    {
-        // This thread will be unavailable for interaction while the render loop runs, so make
-        // sure we were given a valid amount of time to run it for.
-        Wray.assert((typeof ms === "number"), "Expected the number of milliseconds to render to be given as a numerical value.");
-        Wray.assert((ms > 0 && ms < 60000), "The given number of milliseconds to render is out of valid bounds.");
-
-        // Cast rays and accumulate their color values into the render surface.
-        let numSamples = 0;
-        const startTime = Date.now();
-        while ((Date.now() - startTime) < ms)
-        {
-            const x = Math.floor(Math.random() * renderSurface.width);
-            const y = Math.floor(Math.random() * renderSurface.height);
-
-            const color = camera.ray_toward_viewing_plane(x, y).trace(sceneBVH);
-            renderSurface.accumulate_to_pixel_at(x, y, color);
-
-            numSamples++;
-        }
-
-        // Send the results of the rendering back to the parent thread.
-        postMessage(Wray.thread_message.from.marshal.renderingFinished(renderSurface.average_sample_count(), Math.floor(numSamples * (1000 / (Date.now() - startTime)))));
-    }
-    else
-    {
-        const failReasons = [];
-        if (!sceneBVH) failReasons.push("Invalid BVH tree");
-        if (!renderSurface) failReasons.push("Invalid render surface");
-        if (Wray.assertionFailedFlag) failReasons.push("Assertion failure had been flagged");
-
-        postMessage(Wray.thread_message.from.marshal.renderingFailed(failReasons.join(" & ")));
+        const {pixelArray, width, height} = renderSurface.transferable_pixel_array();
+        postMessage(Wray.thread_message.from.marshal.renderBuffer({pixels:pixelArray.buffer, width, height}), [pixelArray.buffer]);
     }
 }
 
