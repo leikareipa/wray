@@ -108,7 +108,7 @@ function worker_message_handler(message)
         {
             if (++numWorkersReady == numWorkers)
             {
-                postMessage(Wray.thread_message.log("Threads are ready to render."));
+                postMessage(Wray.thread_message.log(`Threads (${numWorkers}) are ready to render.`));
                 postMessage(Wray.thread_message.from.marshal.readyToRender());
             }
 
@@ -148,7 +148,11 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
-          //  render(payload.durationMs);
+            // Can't render if there are no render workers.
+            if (numWorkers <= 0)
+            {
+                postMessage(Wray.thread_message.from.marshal.renderingFailed());
+            }
 
             for (const worker of workers)
             {
@@ -168,6 +172,8 @@ onmessage = (message)=>
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case Wray.thread_message.to.marshal.assignRenderSettings().name:
         {
+            numWorkersReady = 0;
+
             if (typeof payload.epsilon !== "undefined")
             {
                 Wray.epsilon = payload.epsilon;
@@ -175,21 +181,30 @@ onmessage = (message)=>
 
             // Spawn workers.
             {
-                switch (String(payload.renderThreads || "all").toLowerCase())
+                if (typeof payload.renderThreads === "undefined") payload.renderThreads = 1;
+
+                // Note: We convert to lowercase string, since the renderThreads value
+                // may be a number of text like "all".
+                switch (String(payload.renderThreads).toLowerCase())
                 {
                     case "all": numWorkers = navigator.hardwareConcurrency; break;
                     case "half": numWorkers = (navigator.hardwareConcurrency / 2); break;
-                    default: numWorkers = Math.max(0, Math.min(navigator.hardwareConcurrency, (Number(payload.renderThreads) || 1))); break;
+                    default: numWorkers = payload.renderThreads; break;
                 }
-                
-                workers = new Array(numWorkers).fill().map((w, idx)=>
-                {
-                    const worker = new Worker("thread-worker.js");
-                    worker.onmessage = worker_message_handler;
-                    worker.id = idx;
 
-                    return worker;
-                });
+                if ((numWorkers > 0) && (numWorkers != workers.length))
+                {
+                    numWorkersStarted = 0;
+
+                    workers = new Array(numWorkers).fill().map((w, idx)=>
+                    {
+                        const worker = new Worker("thread-worker.js");
+                        worker.onmessage = worker_message_handler;
+                        worker.id = idx;
+
+                        return worker;
+                    });
+                }
             }
 
             if (typeof payload.meshFile !== "undefined")
@@ -197,6 +212,8 @@ onmessage = (message)=>
                 Wray.assert((typeof payload.meshFile.filename !== "undefined" &&
                              typeof payload.meshFile.initializer !== "undefined"),
                             "Received a message with one or more missing parameters.");
+
+                            console.log(payload.meshFile.filename);
 
                 if (!meshFilesLoaded.includes(payload.meshFile.filename))
                 {
@@ -250,25 +267,35 @@ onmessage = (message)=>
                 camera = Wray.camera(pos, dir, rot, renderSurface, fov, antialiasing);
             }
 
-            for (const worker of workers)
+            // Note: Though we can't do any rendering with 0 workers, we can do other
+            // things, like certain performance tests, which is why we may've been
+            // requested to create no render workers.
+            if (numWorkers <= 0)
             {
-                worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
-                    resolution:
-                    {
-                        width: renderWidth,
-                        height: renderHeight,
-                    },
-                    camera:
-                    {
-                        dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
-                        pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
-                        rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
-                        fov: camera.fov,
-                        antialiasing: camera.antialiasing,
-                    },
-                    meshFile: payload.meshFile,
-                    workerId: worker.id,
-                }));
+                postMessage(Wray.thread_message.from.marshal.readyToRender());
+            }
+            else
+            {
+                for (const worker of workers)
+                {
+                    worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
+                        resolution:
+                        {
+                            width: renderWidth,
+                            height: renderHeight,
+                        },
+                        camera:
+                        {
+                            dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
+                            pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
+                            rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
+                            fov: camera.fov,
+                            antialiasing: camera.antialiasing,
+                        },
+                        meshFile: payload.meshFile,
+                        workerId: worker.id,
+                    }));
+                }
             }
 
             break;
