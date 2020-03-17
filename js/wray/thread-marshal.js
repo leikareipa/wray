@@ -46,7 +46,6 @@ let camera = Wray.camera(Wray.vector3(0, 0, 0),
 ///          same file.
 const meshFilesLoaded = [];
 
-let numWorkers = 1;
 let numWorkersStarted = 0;
 let numWorkersReady = 0;
 let workers = [];
@@ -68,7 +67,7 @@ function worker_message_handler(message)
         {
             workerRenderBuffers[payload.workerId] = payload;
 
-            if (++numWorkersRendered == numWorkers)
+            if (++numWorkersRendered == workers.length)
             {
                 for (const renderBuffer of workerRenderBuffers)
                 {
@@ -106,9 +105,9 @@ function worker_message_handler(message)
 
         case Wray.thread_message.from.worker.readyToRender().name:
         {
-            if (++numWorkersReady == numWorkers)
+            if (++numWorkersReady == workers.length)
             {
-                postMessage(Wray.thread_message.log(`Threads (${numWorkers}) are ready to render.`));
+                postMessage(Wray.thread_message.log(`Threads (${workers.length}) are ready to render.`));
                 postMessage(Wray.thread_message.from.marshal.readyToRender());
             }
 
@@ -149,14 +148,16 @@ onmessage = (message)=>
         case Wray.thread_message.to.marshal.render().name:
         {
             // Can't render if there are no render workers.
-            if (numWorkers <= 0)
+            if (workers.length <= 0)
             {
                 postMessage(Wray.thread_message.from.marshal.renderingFailed());
             }
-
-            for (const worker of workers)
+            else
             {
-                worker.postMessage(Wray.thread_message.to.worker.render(payload.durationMs));
+                for (const worker of workers)
+                {
+                    worker.postMessage(Wray.thread_message.to.worker.render(payload.durationMs));
+                }
             }
             
             break;
@@ -181,6 +182,8 @@ onmessage = (message)=>
 
             // Spawn workers.
             {
+                let numWorkers = 1;
+
                 if (typeof payload.renderThreads === "undefined") payload.renderThreads = 1;
 
                 // Note: We convert to lowercase string, since the renderThreads value
@@ -270,7 +273,7 @@ onmessage = (message)=>
             // Note: Though we can't do any rendering with 0 workers, we can do other
             // things, like certain performance tests, which is why we may've been
             // requested to create no render workers.
-            if (numWorkers <= 0)
+            if (workers.length <= 0)
             {
                 postMessage(Wray.thread_message.from.marshal.readyToRender());
             }
