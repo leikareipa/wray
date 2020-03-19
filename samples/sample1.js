@@ -125,7 +125,7 @@ wrayThread.onmessage = (message)=>
 
         case Wray.thread_message.from.marshal.renderingFailed().name:
         {
-            window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
+            window.alert(`Wray: Rendering failed. Reason: ${payload.why}`);
 
             break;
         }

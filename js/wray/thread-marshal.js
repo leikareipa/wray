@@ -260,7 +260,7 @@ onmessage = (message)=>
             if ((workers.length <= 0) ||
                 (numWorkersReadyToRender != workers.length))
             {
-                postMessage(Wray.thread_message.from.marshal.renderingFailed("Worker threads aren't ready yet."));
+                postMessage(Wray.thread_message.from.marshal.renderingFailed(`Threads (${workers.length}) aren't yet ready to render!`));
             }
             else
             {
@@ -292,24 +292,24 @@ onmessage = (message)=>
 
             // Spawn workers.
             {
-                let numWorkers = 1;
+                if (typeof payload.renderThreads === "undefined") payload.renderThreads = "all";
 
-                if (typeof payload.renderThreads === "undefined") payload.renderThreads = 1;
-
-                // Note: We convert to lowercase string, since the renderThreads value
-                // may be a number of text like "all".
-                switch (String(payload.renderThreads).toLowerCase())
+                const maxThreadsSupported = ((typeof navigator.hardwareConcurrency === "undefined")? 4 : navigator.hardwareConcurrency);
+                const numWorkerThreads = (()=>
                 {
-                    case "all": numWorkers = navigator.hardwareConcurrency; break;
-                    case "half": numWorkers = (navigator.hardwareConcurrency / 2); break;
-                    default: numWorkers = payload.renderThreads; break;
-                }
+                    switch (String(payload.renderThreads).toLowerCase())
+                    {
+                        case "all":  return maxThreadsSupported;
+                        case "half": return (maxThreadsSupported / 2);
+                        default:     return payload.renderThreads;
+                    }
+                })();
 
-                if ((numWorkers > 0) && (numWorkers != workers.length))
+                if ((numWorkerThreads > 0) && (numWorkerThreads != workers.length))
                 {
                     numWorkersInitialized = 0;
 
-                    workers = new Array(numWorkers).fill().map((w, idx)=>
+                    workers = new Array(numWorkerThreads).fill().map((w, idx)=>
                     {
                         const worker = new Worker("thread-worker.js");
                         worker.onmessage = worker_message_handler;

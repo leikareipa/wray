@@ -105,8 +105,8 @@
 
                         case Wray.thread_message.from.marshal.renderingFailed().name:
                         {
-                            window.alert("Wray: Rendering failed. Reason: '" + payload.reason + "'.");
-                            test_failed(payload.reason);
+                            window.alert(`Wray: Rendering failed. Reason: ${payload.why}`);
+                            test_failed(payload.why);
 
                             break;
                         }
@@ -155,7 +155,7 @@
                 function test_failed(reason = "")
                 {
                     testResultElement.innerHTML = "";
-                    testResultElement.appendChild(document.createTextNode("Oops! The test has failed to run properly. Possible cause: " + reason));
+                    testResultElement.appendChild(document.createTextNode(`Oops! The test has failed to run properly. Possible cause: ${reason}`));
                 }
             }
         </script>
