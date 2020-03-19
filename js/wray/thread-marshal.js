@@ -1,9 +1,69 @@
 /*
- * Tarpeeksi Hyvae Soft 2019 /
- * Wray
+ * 2019, 2020 Tarpeeksi Hyvae Soft
+ *
+ * Software: Wray
  * 
- * Wray's main thread. Handles cross-thread messaging between the parent thread and Wray's
- * threads. Also, at the moment, does all the rendering.
+ * Wray's multithreaded architecture:
+ * 
+ *   DOM thread
+ *    |
+ *    +--> Render worker marshal (this file)
+ *          |
+ *          +--> Render worker #1
+ *          |
+ *          +--> Render worker #2
+ *          |
+ *          +--> Render worker #...
+ * 
+ * The marshal thread takes commands from the DOM thread (via postMessage())
+ * and spawns individual worker threads as needed to carry out the tasks
+ * requested.
+ * 
+ * 
+ * Usage:
+ * 
+ *  1. Create a new marshal:
+ * 
+ *     const marshal = new Worker("thread-marshal.js");
+ * 
+ *  2. Assign a handler function to intercept messages sent by the marshal:
+ * 
+ *     marshal.onmessage = (message)=>
+ *     {
+ *         message = message.data;
+ *         
+ *         switch (message.name)
+ *         {
+ *             case Wray.thread_message.from.marshal.threadInitialized().name:
+ *             {
+ *                 ...handle the message...
+ * 
+ *                 break;
+ *             }
+ *         }
+ *     }
+ * 
+ *  3. Wait for the marshal to send the threadInitialized() message.
+ * 
+ *  4. Tell the marshal which scene to render:
+ * 
+ *     marshal.postMessage(Wray.thread_message.to.marshal.assignRenderSettings({...}));
+ * 
+ *  5. Wait for the marshal to send the readyToRender() message.
+ * 
+ *  6. Tell the marshal to begin rendering for x milliseconds:
+ * 
+ *     marshal.postMessage(Wray.thread_message.to.marshal.render(x));
+ * 
+ *  7. Wait for the marshal to send the renderingFinished() message.
+ * 
+ *  8a. Ask the marshal to keep rendering for another x milliseconds, or...
+ * 
+ *  8b. ...obtain the current pixel buffer's data:
+ *
+ *      marshal.postMessage(Wray.thread_message.to.marshal.uploadRenderBuffer());
+ * 
+ *      // Wait for the renderBuffer() message, which contains the pixel data.
  * 
  */
 
@@ -30,6 +90,7 @@ importScripts("../../js/wray/bvh.js");
 let renderWidth = 2;
 let renderHeight = 2;
 let sceneBVH = null;
+let meshFile = "";
 let renderSurface = Wray.surface(renderWidth, renderHeight);
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
@@ -38,16 +99,8 @@ let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          17,
                          true);
 
-// Will contain as strings the filenames/paths of all the mesh files that we've been asked
-// to load in by the user. This list can then be inspected to make sure we don't unnecessarily
-// load any file twice.
-/// TODO/NB: You could technically ask to load the same file multiple times with different
-///          name strings, like [file, ./file], and the list wouldn't recognize them as the
-///          same file.
-const meshFilesLoaded = [];
-
-let numWorkersStarted = 0;
-let numWorkersReady = 0;
+let numWorkersInitialized = 0;
+let numWorkersReadyToRender = 0;
 let workers = [];
 
 let workerRenderBuffers = [];
@@ -63,8 +116,51 @@ function worker_message_handler(message)
 
     switch (message.name)
     {
+        case Wray.thread_message.from.worker.threadInitialized().name:
+        {
+            if (workers.length <= 0)
+            {
+                postMessage(Wray.thread_message.from.marshal.workerInitializationFailed("A worker is reporting in, even though no workers had been created."));
+
+                break;
+            }
+
+            if (++numWorkersInitialized == workers.length)
+            {
+                for (const worker of workers)
+                {
+                    worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
+                        resolution:
+                        {
+                            width: renderWidth,
+                            height: renderHeight,
+                        },
+                        camera:
+                        {
+                            dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
+                            pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
+                            rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
+                            fov: camera.fov,
+                            antialiasing: camera.antialiasing,
+                        },
+                        meshFile,
+                        workerId: worker.id,
+                    }));
+                }
+            }
+
+            break;
+        }
+
         case Wray.thread_message.from.worker.renderBuffer().name:
         {
+            if (workers.length <= 0)
+            {
+                postMessage(Wray.thread_message.from.marshal.workerInitializationFailed("A worker is reporting in, even though no workers had been created."));
+
+                break;
+            }
+
             workerRenderBuffers[payload.workerId] = payload;
 
             if (++numWorkersRendered == workers.length)
@@ -105,7 +201,14 @@ function worker_message_handler(message)
 
         case Wray.thread_message.from.worker.readyToRender().name:
         {
-            if (++numWorkersReady == workers.length)
+            if (workers.length <= 0)
+            {
+                postMessage(Wray.thread_message.from.marshal.workerInitializationFailed("A worker is reporting in, even though no workers had been created."));
+
+                break;
+            }
+
+            if (++numWorkersReadyToRender == workers.length)
             {
                 postMessage(Wray.thread_message.log(`Threads (${workers.length}) are ready to render.`));
                 postMessage(Wray.thread_message.from.marshal.readyToRender());
@@ -116,6 +219,13 @@ function worker_message_handler(message)
 
         case Wray.thread_message.from.worker.renderingFinished().name:
         {
+            if (workers.length <= 0)
+            {
+                postMessage(Wray.thread_message.from.marshal.workerInitializationFailed("A worker is reporting in, even though no workers had been created."));
+
+                break;
+            }
+
             averageSampleCount += payload.avgSamplesPerPixel;
             samplesPerSecond += payload.samplesPerSecond;
 
@@ -147,10 +257,10 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
-            // Can't render if there are no render workers.
-            if (workers.length <= 0)
+            if ((workers.length <= 0) ||
+                (numWorkersReadyToRender != workers.length))
             {
-                postMessage(Wray.thread_message.from.marshal.renderingFailed());
+                postMessage(Wray.thread_message.from.marshal.renderingFailed("Worker threads aren't ready yet."));
             }
             else
             {
@@ -173,7 +283,7 @@ onmessage = (message)=>
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case Wray.thread_message.to.marshal.assignRenderSettings().name:
         {
-            numWorkersReady = 0;
+            numWorkersReadyToRender = 0;
 
             if (typeof payload.epsilon !== "undefined")
             {
@@ -197,7 +307,7 @@ onmessage = (message)=>
 
                 if ((numWorkers > 0) && (numWorkers != workers.length))
                 {
-                    numWorkersStarted = 0;
+                    numWorkersInitialized = 0;
 
                     workers = new Array(numWorkers).fill().map((w, idx)=>
                     {
@@ -218,13 +328,11 @@ onmessage = (message)=>
 
                             console.log(payload.meshFile.filename);
 
-                if (!meshFilesLoaded.includes(payload.meshFile.filename))
-                {
-                    importScripts(payload.meshFile.filename);
-                    meshFilesLoaded.push(payload.meshFile.filename);
-                }
+                importScripts(payload.meshFile.filename);
 
-                // Load the mesh. Since we use eval(), we'll do some sanitizing, first.
+                // Load the mesh using the initializer function provided by the
+                // mesh file. Since we use eval() to parse the function, we'll do
+                // some sanitizing, first.
                 if (payload.meshFile.initializer.match(/[=:]/))
                 {
                     Wray.assert(0, "Illegal characters in the mesh initializer.");
@@ -235,6 +343,8 @@ onmessage = (message)=>
                 }
                 else
                 {
+                    meshFile = payload.meshFile;
+
                     const mesh = eval("'use strict';" + payload.meshFile.initializer);
                     sceneBVH = Wray.bvh(mesh);
                 }
@@ -276,29 +386,6 @@ onmessage = (message)=>
             if (workers.length <= 0)
             {
                 postMessage(Wray.thread_message.from.marshal.readyToRender());
-            }
-            else
-            {
-                for (const worker of workers)
-                {
-                    worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
-                        resolution:
-                        {
-                            width: renderWidth,
-                            height: renderHeight,
-                        },
-                        camera:
-                        {
-                            dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
-                            pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
-                            rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
-                            fov: camera.fov,
-                            antialiasing: camera.antialiasing,
-                        },
-                        meshFile: payload.meshFile,
-                        workerId: worker.id,
-                    }));
-                }
             }
 
             break;

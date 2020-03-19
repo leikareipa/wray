@@ -84,6 +84,9 @@ Wray.thread_message =
             // Sent by a marshal to upload its render buffer to the parent thread.
             renderBuffer: (renderBuffer = {})=>Wray.thread_message_body("marshal-render-buffer", renderBuffer),
 
+            // Sent by a marshal if it fails to properly initialize its worker threads.
+            workerInitializationFailed: (why = "")=>Wray.thread_message_body("marshal-worker-initialization-failed", {why}),
+
             // Sent by a marshal thread to inform its parent that it has failed to
             // render.
             renderingFailed: (why = "")=>Wray.thread_message_body("marshal-rendering-failed", {why}),

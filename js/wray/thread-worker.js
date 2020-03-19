@@ -3,6 +3,21 @@
  *
  * Software: Wray
  * 
+ * Wray's multithreaded architecture:
+ * 
+ *   DOM thread
+ *    |
+ *    +--> Render worker marshal
+ *          |
+ *          +--> Render worker #1 (this file)
+ *          |
+ *          +--> Render worker #2 (this file)
+ *          |
+ *          +--> Render worker #...
+ * 
+ * The render worker carries out any actual rendering work, the instructions
+ * and data for which it'll receive from the marshal thread.
+ * 
  */
 
 "use strict";
