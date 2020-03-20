@@ -59,6 +59,13 @@
 
                 switch (message.name)
                 {
+                    case Wray.thread_message.from.marshal.renderingFailed().name:
+                    {
+                        window.alert(`Wray: Rendering failed. Reason: ${payload.why}`);
+
+                        break;
+                    }
+
                     case Wray.thread_message.from.marshal.threadInitialized().name:
                     {
                         run_test();
@@ -105,7 +112,7 @@
                         break;
                     }
                     
-                    default: Wray.log(`Unknown thread message: ${message.name}`); break;
+                    default: Wray.log(`Unhandled thread message: ${message.name}`); break;
                 }
             };
 

@@ -1,6 +1,6 @@
 {
     "comments":["A sample Wray scene that renders a mesh of Suzanne the Blender monkey.",
-                "Note that the mesh filename is given as relative to the root of the host path (e.g. 'http://localhost/wray/assets/file.bin' -> 'assets/file.bin')."],
+                "Note that the mesh filename is given relative to the root of the host path (e.g. 'http://localhost/wray/assets/file.bin' -> 'assets/file.bin')."],
 
     "meshFile":
     {

@@ -44,7 +44,7 @@ wrayThread.onmessage = (message)=>
                     const lastSlashIdx = window.location.pathname.lastIndexOf('/');
                     Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
                     const basePath = (window.location.origin +
-                                    window.location.pathname.substring(0, lastSlashIdx+1));
+                                      window.location.pathname.substring(0, lastSlashIdx + 1));
 
                     sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
                 }
@@ -143,7 +143,7 @@ wrayThread.onmessage = (message)=>
             break;
         }
 
-        default: Wray.log(`Unknown thread message: ${message.name}`); break;
+        default: Wray.log(`Unhandled thread message: ${message.name}`); break;
     }
 };
 

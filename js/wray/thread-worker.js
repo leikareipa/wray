@@ -91,11 +91,15 @@ onmessage = (message)=>
                                  payload.camera.fov,
                                  payload.camera.antialiasing);
 
-            if (typeof payload.meshFile !== "undefined")
+            if (payload.meshFile !== null)
             {
-                Wray.assert((typeof payload.meshFile.filename !== "undefined" &&
-                             typeof payload.meshFile.initializer !== "undefined"),
-                            "Received a message with one or more missing parameters.");
+                if ((typeof payload.meshFile.filename === "undefined") ||
+                    (typeof payload.meshFile.initializer === "undefined"))
+                {
+                    postMessage(Wray.thread_message.from.worker.renderingFailed(id, "Missing mesh file parameters."));
+
+                    break;
+                }
 
                 // Load the mesh. We expect that the mesh file has already been
                 // sanity-checked by the marshal thread.
@@ -104,6 +108,12 @@ onmessage = (message)=>
                 sceneBVH = Wray.bvh(mesh);
 
                 postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} ms.`));
+            }
+            else
+            {
+                postMessage(Wray.thread_message.from.worker.renderingFailed(id, "Invalid mesh file."));
+
+                break;
             }
 
             postMessage(Wray.thread_message.from.worker.readyToRender(id));
@@ -117,7 +127,7 @@ onmessage = (message)=>
             break;
         }
 
-        default: Wray.log(`Unknown thread message: ${message.name}`); break;
+        default: Wray.log(`Unhandled thread message: ${message.name}`); break;
     }
 }
 
@@ -139,14 +149,13 @@ function upload_image_buffer()
 // Sample the rendering for x milliseconds.
 function render(ms = 1000)
 {
+    // This thread will be unavailable for interaction while the render loop runs, so make
+    // sure the amount of time we were asked to render for is within reason.
+    Wray.assert((ms > 0 && ms < 60000), "The given number of milliseconds to render is out of valid bounds.");
+
     // If we have a valid context for rendering.
     if (sceneBVH && renderSurface && !Wray.assertionFailedFlag)
     {
-        // This thread will be unavailable for interaction while the render loop runs, so make
-        // sure we were given a valid amount of time to run it for.
-        Wray.assert((typeof ms === "number"), "Expected the number of milliseconds to render to be given as a numerical value.");
-        Wray.assert((ms > 0 && ms < 60000), "The given number of milliseconds to render is out of valid bounds.");
-
         // Cast rays and accumulate their color values into the render surface.
         let numSamples = 0;
         const startTime = Date.now();

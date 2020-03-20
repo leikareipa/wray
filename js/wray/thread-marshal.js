@@ -90,7 +90,7 @@ importScripts("../../js/wray/bvh.js");
 let renderWidth = 2;
 let renderHeight = 2;
 let sceneBVH = null;
-let meshFile = "";
+let meshFile = null;
 let renderSurface = Wray.surface(renderWidth, renderHeight);
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
@@ -116,6 +116,13 @@ function worker_message_handler(message)
 
     switch (message.name)
     {
+        case Wray.thread_message.from.worker.renderingFailed().name:
+        {
+            postMessage(Wray.thread_message.assert(false, `Rendering failed. Reason: ${payload.why}`));
+
+            break;
+        }
+
         case Wray.thread_message.from.worker.threadInitialized().name:
         {
             if (workers.length <= 0)
@@ -240,6 +247,8 @@ function worker_message_handler(message)
 
             break;
         }
+
+        default: Wray.log(`Unhandled worker thread message: ${message.name}`); break;
     }
 
     return;
@@ -257,19 +266,26 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
+            if (meshFile === null)
+            {
+                postMessage(Wray.thread_message.from.marshal.renderingFailed("No mesh file specified."));
+
+                break;
+            }
+
             if ((workers.length <= 0) ||
                 (numWorkersReadyToRender != workers.length))
             {
                 postMessage(Wray.thread_message.from.marshal.renderingFailed(`Threads (${workers.length}) aren't yet ready to render!`));
+
+                break;
             }
-            else
+
+            for (const worker of workers)
             {
-                for (const worker of workers)
-                {
-                    worker.postMessage(Wray.thread_message.to.worker.render(payload.durationMs));
-                }
+                worker.postMessage(Wray.thread_message.to.worker.render(payload.durationMs));
             }
-            
+
             break;
         }
 
@@ -322,11 +338,13 @@ onmessage = (message)=>
 
             if (typeof payload.meshFile !== "undefined")
             {
-                Wray.assert((typeof payload.meshFile.filename !== "undefined" &&
-                             typeof payload.meshFile.initializer !== "undefined"),
-                            "Received a message with one or more missing parameters.");
+                if ((typeof payload.meshFile.filename === "undefined") ||
+                    (typeof payload.meshFile.initializer === "undefined"))
+                {
+                    postMessage(Wray.thread_message.from.worker.renderingFailed("Missing mesh file parameters."));
 
-                            console.log(payload.meshFile.filename);
+                    break;
+                }
 
                 importScripts(payload.meshFile.filename);
 
@@ -335,11 +353,9 @@ onmessage = (message)=>
                 // some sanitizing, first.
                 if (payload.meshFile.initializer.match(/[=:]/))
                 {
-                    Wray.assert(0, "Illegal characters in the mesh initializer.");
-                }
-                else if (Wray.in_window_thread())
-                {
-                    Wray.assert(0, "Can't load meshes from inside the window thread.");
+                    postMessage(Wray.thread_message.from.marshal.renderingFailed("Illegal characters in the mesh initializer."));
+
+                    break;
                 }
                 else
                 {
@@ -391,7 +407,7 @@ onmessage = (message)=>
             break;
         }
 
-        default: Wray.log(`Unknown thread message: ${message.name}`); break;
+        default: Wray.log(`Unhandled thread message: ${message.name}`); break;
     }
 }
 
