@@ -23,31 +23,23 @@ wrayThread.onmessage = (message)=>
     {
         case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            const sceneFileName = "./assets/sample1/monkey.wray-scene.json";
+            const sceneFileName = "./assets/sample1/cube-on-floor.wray-scene";
 
             Wray.log(`Loading scene from ${sceneFileName}`);
             
             fetch(sceneFileName)
-            .then((response)=>response.json())
+            .then((response)=>response.text())
             .then((sceneSettings)=>
             {
-                sceneSettings.outputResolution.width /= Wray.ui.renderDownscale;
-                sceneSettings.outputResolution.height /= Wray.ui.renderDownscale;
+                sceneSettings = Function(`"use strict"; return (${sceneSettings})`)();
 
-                // If a mesh's filename was given, assume it's relative and needs an absolute
-                // address path prefixed.
-                if (typeof sceneSettings.meshFile !== "undefined" &&
-                    typeof sceneSettings.meshFile.filename !== "undefined")
+                sceneSettings.outputResolution =
                 {
-                    // Convert Wray's URL into a base path.
-                    // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
-                    const lastSlashIdx = window.location.pathname.lastIndexOf('/');
-                    Wray.assert((lastSlashIdx >= 0), "Failed to find a trailing forward slash in Wray's base URL.");
-                    const basePath = (window.location.origin +
-                                      window.location.pathname.substring(0, lastSlashIdx + 1));
+                    width: (1280 / Wray.ui.renderDownscale),
+                    height: (720 / Wray.ui.renderDownscale),
+                };
 
-                    sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
-                }
+                sceneSettings.renderThreads = (new URLSearchParams(window.location.search).get("threads") || "all");
 
                 wrayThread.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
             })
@@ -104,7 +96,31 @@ wrayThread.onmessage = (message)=>
             }
 
             // Ask Wray to keep rendering. It'll send us the frame buffer again when it's done.
-            if (!Wray.assertionFailedFlag) wrayThread.postMessage(Wray.thread_message.to.marshal.render(3000));
+            if (!Wray.assertionFailedFlag)
+            {
+                const renderTime = 3000;
+
+                // If the user hasn't paused the rendering, request the thread marshal to
+                // render some more. Otherwise, wait until the rendering  isn't paused
+                // anymore before asking for more rendering.
+                if (!Wray.ui.pauseButton.pressed)
+                {
+                    wrayThread.postMessage(Wray.thread_message.to.marshal.render(renderTime));
+                }
+                else
+                {
+                    const intervalId = setInterval(request_more_rendering, 2000);
+
+                    function request_more_rendering()
+                    {
+                        if (!Wray.ui.pauseButton.pressed)
+                        {
+                            wrayThread.postMessage(Wray.thread_message.to.marshal.render(renderTime));
+                            clearInterval(intervalId);
+                        }
+                    }
+                }
+            }
 
             break;
         }
@@ -151,7 +167,7 @@ Wray.ui = {};
 
 // We'll downscale the image's resolution by this multiplier when rendering it, and upscale
 // it by the same amount for display; resulting in other words in fewer but larger pixels.
-Wray.ui.renderDownscale = 4;
+Wray.ui.renderDownscale = (Math.max(1, Math.min(16, (new URLSearchParams(window.location.search).get("pixelSize") || "1"))));
 
 // Will be set to false once Wray is ready to start rendering.
 Wray.ui.wrayIsInitializing = true;
@@ -180,3 +196,17 @@ Wray.ui.reveal_ui = function()
 
     return;
 };
+
+Wray.ui.pauseButton = document.getElementById("pause-button");
+Wray.ui.pauseButton.pressed = false;
+Wray.ui.pauseButton.onclick = ()=>
+{
+    Wray.ui.pauseButton.pressed = !Wray.ui.pauseButton.pressed;
+
+    Wray.ui.pauseButton.setAttribute("class", Wray.ui.pauseButton.pressed
+                                              ? "fas fa-fw fa-sm fa-play"
+                                              : "fas fa-fw fa-sm fa-pause");
+    Wray.ui.pauseButton.setAttribute("title", Wray.ui.pauseButton.pressed
+                                              ? "Resume"
+                                              : "Pause");
+}

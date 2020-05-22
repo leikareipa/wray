@@ -159,7 +159,6 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
             // Otherwise, cast out a new ray from the current intersection point.
             {
                 const rayAtIntersection = ray.step(intersected.distance).step(Wray.epsilon, intersected.triangle.normal);
-
                 const {outRay, bsdf} = intersected.triangle.material.scatter(rayAtIntersection, intersected.triangle.normal);
                 const inLight = outRay.trace(sceneBVH, depth + 1);
                 return Wray.color_rgb(inLight.red*bsdf * material.color.red,

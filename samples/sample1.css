@@ -74,29 +74,28 @@ body
 
 #wray-init-notice
 {
-    color: white;
-    font-size: 110%;
-    letter-spacing: 0px;
-    font-weight: bold;
+    color: #e47979;
+    font-size: 150%;
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 2;
+    font-family: sans-serif;
 }
 
 /* Spinners adapted from https://www.w3schools.com/howto/howto_css_loader.asp.*/
 #wray-init-spinner /* Spins to indicate that Wray is initializing.*/
 {
     border: 5px solid transparent;
-    border-right: 5px solid white;
-    border-left: 5px solid white;
+    border-right: 20px solid #e47979;
+    border-left: 20px solid #e47979;
     border-radius: 50%;
-    width: 35px;
-    height: 35px;
+    width: 55px;
+    height: 55px;
     animation: spin 2s linear infinite;
     display: inline-block;
-    margin-bottom: 14px;
+    margin-bottom: 0;
 }
 
 @keyframes spin
@@ -105,12 +104,23 @@ body
     100% { transform: rotate(359deg); }
 }
 
-
 @media only screen and (max-width: 1280px)
 {
     body
     {
         padding: 0;
         margin: 0;
+    }
+
+    #wray-render-target
+    {
+        border-radius: 0;
+    }
+
+    #wray-status-container
+    {
+        background-color: #e47979;
+        color: black;
+        border-radius: 0;
     }
 }

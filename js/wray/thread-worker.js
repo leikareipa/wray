@@ -91,21 +91,10 @@ onmessage = (message)=>
                                  payload.camera.fov,
                                  payload.camera.antialiasing);
 
-            if (payload.meshFile !== null)
+            if (payload.triangles !== null)
             {
-                if ((typeof payload.meshFile.filename === "undefined") ||
-                    (typeof payload.meshFile.initializer === "undefined"))
-                {
-                    postMessage(Wray.thread_message.from.worker.renderingFailed(id, "Missing mesh file parameters."));
-
-                    break;
-                }
-
-                // Load the mesh. We expect that the mesh file has already been
-                // sanity-checked by the marshal thread.
-                importScripts(payload.meshFile.filename);
-                const mesh = eval("'use strict';" + payload.meshFile.initializer);
-                sceneBVH = Wray.bvh(mesh);
+                const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
+                sceneBVH = Wray.bvh(sceneTriangles);
 
                 postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} ms.`));
             }

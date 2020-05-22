@@ -22,6 +22,8 @@ Wray.skyModels = Object.freeze(
     },
 
     ambient: ()=>(Wray.color_rgb(1, 1, 1)),
+
+    black: ()=>(Wray.color_rgb(0, 0, 0)),
 });
 
 // Which of the sky models will be used when rendering.

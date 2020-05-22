@@ -18,8 +18,19 @@
     </head>
     <body>
         <script src="../../js/wray/wray.js"></script>
-        <script src="../../js/wray/log.js"></script>
         <script src="../../js/wray/thread-message.js"></script>
+        <script src="../../js/wray/assert.js"></script>
+        <script src="../../js/wray/log.js"></script>
+        <script src="../../js/wray/matrix44.js"></script>
+        <script src="../../js/wray/color.js"></script>
+        <script src="../../js/wray/vector.js"></script>
+        <script src="../../js/wray/ray.js"></script>
+        <script src="../../js/wray/surface.js"></script>
+        <script src="../../js/wray/sky.js"></script>
+        <script src="../../js/wray/material.js"></script>
+        <script src="../../js/wray/triangle.js"></script>
+        <script src="../../js/wray/camera.js"></script>
+        <script src="../../js/wray/bvh.js"></script>
         <script>
             // For how many milliseconds, roughly, to let the test run in total.
             const testTimeMs = 120000;
@@ -51,32 +62,20 @@
                     {
                         case Wray.thread_message.from.marshal.threadInitialized().name:
                         {
-                            const sceneFileName = "./assets/perftest1/monkey.wray-scene.json";
+                            const sceneFileName = "./assets/perftest1/monkey.wray-scene";
 
                             testResultElement.innerHTML = "";
                             testResultElement.appendChild(document.createTextNode(`Running the test for ${testTimeMs/1000} seconds at ${updateIntervalMs} ms intervals...`));
 
                             fetch(sceneFileName)
-                            .then((response)=>response.json())
+                            .then((response)=>response.text())
                             .then((sceneSettings)=>
                             {
-                                // If a mesh's filename was given, assume it's relative and needs an absolute
-                                // address path prefixed.
-                                if (typeof sceneSettings.meshFile !== "undefined" &&
-                                    typeof sceneSettings.meshFile.filename !== "undefined")
-                                {
-                                    // Convert Wray's URL into a base path.
-                                    // E.g. 'http://localhost/wray/index.html?a=2' -> 'http://localhost/wray/'.
-                                    const lastSlashIdx = window.location.pathname.lastIndexOf('/');
-                                    const basePath = (window.location.origin +
-                                                      window.location.pathname.substring(0, lastSlashIdx+1));
-
-                                    sceneSettings.meshFile.filename = (basePath + sceneSettings.meshFile.filename);
-                                }
+                                sceneSettings = Function(`"use strict"; return (${sceneSettings})`)();
 
                                 wrayThread.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
                             })
-                            .catch((error)=>window.alert("Attempt to fetch file \"" + sceneFileName +
+                            .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
                                                         "\" returned with error \"" + error + "\"."));
                                                             
                             break;

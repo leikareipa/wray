@@ -90,7 +90,7 @@ importScripts("../../js/wray/bvh.js");
 let renderWidth = 2;
 let renderHeight = 2;
 let sceneBVH = null;
-let meshFile = null;
+let sceneTriangleString = null;
 let renderSurface = Wray.surface(renderWidth, renderHeight);
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
@@ -150,7 +150,7 @@ function worker_message_handler(message)
                             fov: camera.fov,
                             antialiasing: camera.antialiasing,
                         },
-                        meshFile,
+                        triangles: sceneTriangleString,
                         workerId: worker.id,
                     }));
                 }
@@ -266,9 +266,9 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
-            if (meshFile === null)
+            if (sceneTriangleString === null)
             {
-                postMessage(Wray.thread_message.from.marshal.renderingFailed("No mesh file specified."));
+                postMessage(Wray.thread_message.from.marshal.renderingFailed("No scene mesh specified."));
 
                 break;
             }
@@ -308,7 +308,7 @@ onmessage = (message)=>
 
             // Spawn workers.
             {
-                if (typeof payload.renderThreads === "undefined") payload.renderThreads = "all";
+                if (typeof payload.renderThreads === "undefined") payload.renderThreads = "half";
 
                 const maxThreadsSupported = ((typeof navigator.hardwareConcurrency === "undefined")? 4 : navigator.hardwareConcurrency);
                 const numWorkerThreads = (()=>
@@ -316,8 +316,8 @@ onmessage = (message)=>
                     switch (String(payload.renderThreads).toLowerCase())
                     {
                         case "all":  return maxThreadsSupported;
-                        case "half": return (maxThreadsSupported / 2);
-                        default:     return payload.renderThreads;
+                        case "half": return ((maxThreadsSupported / 2) || 1);
+                        default:     return Number(payload.renderThreads);
                     }
                 })();
 
@@ -336,34 +336,11 @@ onmessage = (message)=>
                 }
             }
 
-            if (typeof payload.meshFile !== "undefined")
+            if (typeof payload.triangles !== "undefined")
             {
-                if ((typeof payload.meshFile.filename === "undefined") ||
-                    (typeof payload.meshFile.initializer === "undefined"))
-                {
-                    postMessage(Wray.thread_message.from.worker.renderingFailed("Missing mesh file parameters."));
-
-                    break;
-                }
-
-                importScripts(payload.meshFile.filename);
-
-                // Load the mesh using the initializer function provided by the
-                // mesh file. Since we use eval() to parse the function, we'll do
-                // some sanitizing, first.
-                if (payload.meshFile.initializer.match(/[=:]/))
-                {
-                    postMessage(Wray.thread_message.from.marshal.renderingFailed("Illegal characters in the mesh initializer."));
-
-                    break;
-                }
-                else
-                {
-                    meshFile = payload.meshFile;
-
-                    const mesh = eval("'use strict';" + payload.meshFile.initializer);
-                    sceneBVH = Wray.bvh(mesh);
-                }
+                sceneTriangleString = payload.triangles;
+                const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
+                sceneBVH = Wray.bvh(sceneTriangles);
             }
 
             if (typeof payload.maxRayDepth !== "undefined")
@@ -382,14 +359,14 @@ onmessage = (message)=>
             if (typeof payload.camera !== "undefined")
             {
                 let dir = camera.dir,
-                    pos = camera.pos,
+                    pos = camera.position,
                     rot = camera.rot,
                     fov = camera.fov,
                     antialiasing = camera.antialiasing;
 
-                if (typeof payload.camera.dir !== "undefined") dir = Wray.vector3(...payload.camera.dir).normalized();
-                if (typeof payload.camera.rot !== "undefined") rot = Wray.vector3(...payload.camera.rot);
-                if (typeof payload.camera.pos !== "undefined") pos = Wray.vector3(...payload.camera.pos);
+                if (typeof payload.camera.direction !== "undefined") dir = Wray.vector3(payload.camera.direction.x, payload.camera.direction.y, payload.camera.direction.z).normalized();
+                if (typeof payload.camera.rotation !== "undefined") rot = Wray.vector3(payload.camera.rotation.x, payload.camera.rotation.y, payload.camera.rotation.z);
+                if (typeof payload.camera.position !== "undefined") pos = Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z);
                 if (typeof payload.camera.fov !== "undefined") fov = payload.camera.fov;
                 if (typeof payload.camera.antialiasing !== "undefined") antialiasing = payload.camera.antialiasing;
 
