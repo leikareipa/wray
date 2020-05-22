@@ -13,9 +13,8 @@ body
 /* For the HTML5 canvas we'll render into.*/
 #wray-render-target
 {
-    box-shadow: 0 4px 7px -5px rgba(0, 0, 0, 0.7);
-    background-color: dimgray;
-    border-radius: 0px;
+    background-color: transparent;
+    border-radius: 5px 5px 0 0;
     margin: 0px;
     position: relative;
     z-index: 3;
@@ -33,12 +32,12 @@ body
 
 #wray-status-container
 {
-    background-color: rgb(80, 177, 129);
-    color: rgb(37, 48, 40);
+    background-color: #e47979;
+    color: black;
     border-radius: 0 0 5px 5px;
     width: 400px;
     display: inline-block;
-    padding: 17px 0;
+    padding: 18px 0;
     position: relative;
     z-index: 1;
     margin: 0;
@@ -46,6 +45,31 @@ body
 
     /* Will be unhidden when rendering begins.*/
     display: none;
+}
+
+#wray-controls
+{
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: dimgray;
+}
+
+#wray-controls > i + i
+{
+    margin-left: 20px;
+}
+
+#wray-controls > i
+{
+    padding: 18px;
+}
+
+#wray-controls > i:hover
+{
+    color: black;
+    cursor: pointer;
 }
 
 #wray-init-notice
@@ -86,7 +110,6 @@ body
 {
     body
     {
-        background-color: rgb(80, 177, 129);
         padding: 0;
         margin: 0;
     }
