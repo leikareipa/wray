@@ -25,7 +25,7 @@ wrayThread.onmessage = (message)=>
         {
             const sceneFileName = "./assets/sample1/cube-on-floor.wray-scene";
 
-            Wray.log(`Loading scene from ${sceneFileName}`);
+            Wray.log(`Loading scene from ${sceneFileName}...`);
             
             fetch(sceneFileName)
             .then((response)=>response.text())
@@ -209,4 +209,7 @@ Wray.ui.pauseButton.onclick = ()=>
     Wray.ui.pauseButton.setAttribute("title", Wray.ui.pauseButton.pressed
                                               ? "Resume"
                                               : "Pause");
+    document.getElementById("pause-button-text").textContent = Wray.ui.pauseButton.pressed
+                                                               ? "paused"
+                                                               : "";
 }
