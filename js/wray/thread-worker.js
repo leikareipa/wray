@@ -96,7 +96,7 @@ onmessage = (message)=>
                 const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
                 sceneBVH = Wray.bvh(sceneTriangles);
 
-                postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} ms.`));
+                postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} seconds.`));
             }
             else
             {
