@@ -21,7 +21,7 @@ Wray.skyModels = Object.freeze(
         return Wray.color_rgb(luminance, luminance, luminance);
     },
 
-    ambient: ()=>(Wray.color_rgb(1, 1, 1)),
+    white: ()=>(Wray.color_rgb(1, 1, 1)),
 
     black: ()=>(Wray.color_rgb(0, 0, 0)),
 });

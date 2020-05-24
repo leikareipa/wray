@@ -94,7 +94,7 @@ let sceneTriangleString = null;
 let renderSurface = Wray.surface(renderWidth, renderHeight);
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
-                         Wray.vector3(0, 0, 0),
+                         0,
                          renderSurface,
                          17,
                          true);
@@ -144,9 +144,19 @@ function worker_message_handler(message)
                         },
                         camera:
                         {
-                            dir: {x: camera.dir.x, y: camera.dir.y, z: camera.dir.z},
-                            pos: {x: camera.pos.x, y: camera.pos.y, z: camera.pos.z},
-                            rot: {x: camera.rot.x, y: camera.rot.y, z: camera.rot.z},
+                            position:
+                            {
+                                x: camera.pos.x,
+                                y: camera.pos.y,
+                                z: camera.pos.z,
+                            },
+                            axisAngle:
+                            {
+                                x: camera.axis.x,
+                                y: camera.axis.y,
+                                z: camera.axis.z,
+                                w: camera.angle,
+                            },
                             fov: camera.fov,
                             antialiasing: camera.antialiasing,
                         },
@@ -358,19 +368,31 @@ onmessage = (message)=>
 
             if (typeof payload.camera !== "undefined")
             {
-                let dir = camera.dir,
-                    pos = camera.position,
-                    rot = camera.rot,
+                let pos = camera.pos,
+                    axis = camera.axis,
+                    angle = camera.angle,
                     fov = camera.fov,
                     antialiasing = camera.antialiasing;
 
-                if (typeof payload.camera.direction !== "undefined") dir = Wray.vector3(payload.camera.direction.x, payload.camera.direction.y, payload.camera.direction.z).normalized();
-                if (typeof payload.camera.rotation !== "undefined") rot = Wray.vector3(payload.camera.rotation.x, payload.camera.rotation.y, payload.camera.rotation.z);
-                if (typeof payload.camera.position !== "undefined") pos = Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z);
-                if (typeof payload.camera.fov !== "undefined") fov = payload.camera.fov;
-                if (typeof payload.camera.antialiasing !== "undefined") antialiasing = payload.camera.antialiasing;
+                if (typeof payload.camera.axisAngle !== "undefined")
+                {
+                    axis = Wray.vector3(payload.camera.axisAngle.x, payload.camera.axisAngle.y, payload.camera.axisAngle.z).normalized();
+                    angle = payload.camera.axisAngle.w;
+                }
+                if (typeof payload.camera.position !== "undefined")
+                {
+                    pos = Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z);
+                }
+                if (typeof payload.camera.fov !== "undefined")
+                {
+                    fov = payload.camera.fov;
+                }
+                if (typeof payload.camera.antialiasing !== "undefined")
+                {
+                    antialiasing = payload.camera.antialiasing;
+                }
 
-                camera = Wray.camera(pos, dir, rot, renderSurface, fov, antialiasing);
+                camera = Wray.camera(pos, axis, angle, renderSurface, fov, antialiasing);
             }
 
             // Note: Though we can't do any rendering with 0 workers, we can do other

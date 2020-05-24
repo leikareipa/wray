@@ -10,7 +10,7 @@
 const Wray = {};
 
 Wray.epsilon = 0.000001;
-Wray.maxRayDepth = 10;
+Wray.maxRayDepth = 50;
 
 // Returns false if the caller is (likely) running inside a Web Worker thread; and true otherwise.
 Object.defineProperty(Wray, "in_window_thread", {value:()=>(Boolean(typeof importScripts !== "function")),

@@ -19,8 +19,8 @@ Wray.vector3 = function(x = 0, y = 0, z = 0)
         // Expects a 4 x 4 matrix.
         rotated_by_matrix: function(m44 = [])
         {
-            const x0 = ((m44[0] * x) + (m44[4] * y) + (m44[8] * z));
-            const y0 = ((m44[1] * x) + (m44[5] * y) + (m44[9] * z));
+            const x0 = ((m44[0] * x) + (m44[4] * y) + (m44[ 8] * z));
+            const y0 = ((m44[1] * x) + (m44[5] * y) + (m44[ 9] * z));
             const z0 = ((m44[2] * x) + (m44[6] * y) + (m44[10] * z));
 
             return Wray.vector3(x0, y0, z0);
@@ -34,8 +34,8 @@ Wray.vector3 = function(x = 0, y = 0, z = 0)
         cross: function(other = {})
         {
             return Wray.vector3(((y * other.z) - (z * other.y)),
-                           ((z * other.x) - (x * other.z)),
-                           ((x * other.y) - (y * other.x)));
+                                ((z * other.x) - (x * other.z)),
+                                ((x * other.y) - (y * other.x)));
         },
 
         dot: function(other = {})
@@ -46,15 +46,9 @@ Wray.vector3 = function(x = 0, y = 0, z = 0)
         // Returns a normalized copy of the vector.
         normalized: function()
         {
-            const sn = ((x * x) + (y * y) + (z * z));
+            const sn = (Math.sqrt((x * x) + (y * y) + (z * z)) || 1);
 
-            if (sn != 0 && sn != 1)
-            {
-                const inv = (1.0 / Math.sqrt(sn));
-                return Wray.vector3((x * inv), (y * inv), (z * inv));
-            }
-            
-            return Wray.vector3(x, y, z);
+            return Wray.vector3((x / sn), (y / sn), (z / sn));
         },
 
         scaled: function(scale = Wray.vector3())

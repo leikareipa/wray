@@ -49,7 +49,7 @@ let renderSurface = Wray.surface(renderWidth, renderHeight);
 let sceneBVH = null;
 let camera = Wray.camera(Wray.vector3(0, 0, 0),
                          Wray.vector3(0, 0, 1),
-                         Wray.vector3(0, 0, 0),
+                         0,
                          renderSurface,
                          17,
                          true);
@@ -84,9 +84,9 @@ onmessage = (message)=>
         {
             id = payload.workerId;
             renderSurface = Wray.surface(payload.resolution.width, payload.resolution.height);
-            camera = Wray.camera(Wray.vector3(payload.camera.pos.x, payload.camera.pos.y, payload.camera.pos.z),
-                                 Wray.vector3(payload.camera.dir.x, payload.camera.dir.y, payload.camera.dir.z),
-                                 Wray.vector3(payload.camera.rot.x, payload.camera.rot.y, payload.camera.rot.z),
+            camera = Wray.camera(Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z),
+                                 Wray.vector3(payload.camera.axisAngle.x, payload.camera.axisAngle.y, payload.camera.axisAngle.z),
+                                 payload.camera.axisAngle.w,
                                  renderSurface,
                                  payload.camera.fov,
                                  payload.camera.antialiasing);

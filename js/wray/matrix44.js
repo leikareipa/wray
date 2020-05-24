@@ -40,6 +40,14 @@ Wray.matrix44 = (()=>
 {
     return Object.freeze(
     {
+        identity: function()
+        {
+            return Object.freeze([1, 0, 0, 0,
+                                  0, 1, 0, 0,
+                                  0, 0, 1, 0,
+                                  0, 0, 0, 1]);
+        },
+
         scale: function(x = 0, y = 0, z = 0)
         {
             return Object.freeze([x, 0, 0, 0,
@@ -63,9 +71,9 @@ Wray.matrix44 = (()=>
                         0,            Math.sin(x),  Math.cos(x),  0,
                         0,            0,            0,            1];
 
-            const my = [Math.cos(y),  0,            Math.sin(y),  0,
+            const my = [Math.cos(y),  0,            -Math.sin(y), 0,
                         0,            1,            0,            0,
-                        -Math.sin(y), 0,            Math.cos(y),  0,
+                        Math.sin(y),  0,             Math.cos(y), 0,
                         0,            0,            0,            1];
 
             const mz = [Math.cos(z),  -Math.sin(z), 0,            0,
@@ -74,7 +82,7 @@ Wray.matrix44 = (()=>
                         0,            0,            0,            1];
 
             const temp = Wray.matrix44.matrices_multiplied(my, mz);
-            const mResult = Wray.matrix44.matrices_multiplied(mx, temp);
+            const mResult = Wray.matrix44.matrices_multiplied(temp, mx);
 
             Wray.assert((mResult.length === 16), "Expected a 4 x 4 matrix.");
             return Object.freeze(mResult);
