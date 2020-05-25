@@ -25,6 +25,8 @@ wrayThread.onmessage = (message)=>
         {
             const sceneFileName = "./assets/sample1/cube-on-floor.wray-scene";
 
+            sampleUI.initialize();
+
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
             fetch(sceneFileName)
@@ -35,8 +37,8 @@ wrayThread.onmessage = (message)=>
 
                 sceneSettings.outputResolution =
                 {
-                    width: (1280 / Wray.ui.renderDownscale),
-                    height: (720 / Wray.ui.renderDownscale),
+                    width: (1280 / sampleUI.settings.pixelSize),
+                    height: (720 / sampleUI.settings.pixelSize),
                 };
 
                 sceneSettings.renderThreads = (new URLSearchParams(window.location.search).get("threads") || "all");
@@ -69,19 +71,19 @@ wrayThread.onmessage = (message)=>
 
                 // Copy the rendering's pixels onto the canvas element.
                 {
-                    const uiWidth = Math.min(width * Wray.ui.renderDownscale, document.documentElement.clientWidth);
-                    const uiHeight = (uiWidth * (height / width));
+                    const uiWidth = Math.min((width * sampleUI.settings.pixelSize), document.documentElement.clientWidth);
 
-                    // If this is our first time receiving data from the renderer, create
-                    // an animation that slides the canvas onto the screen.
-                    if (Wray.ui.wrayIsInitializing) Wray.ui.reveal_ui();
+                    if (!sampleUI.isVisible)
+                    {
+                        sampleUI.reveal();
+                        document.getElementById("wray-init-notice").remove();
+                    }
+                    
+                    sampleUI.elements.canvas.setAttribute("width", width);
+                    sampleUI.elements.canvas.setAttribute("height", height);
 
-                    Wray.ui.elements.rendererCanvas.setAttribute("width", width);
-                    Wray.ui.elements.rendererCanvas.setAttribute("height", height);
-
-                    Wray.ui.elements.statusContainer.style.width = uiWidth + "px";
-                    Wray.ui.elements.rendererCanvas.style.width = uiWidth + "px";
-                    Wray.ui.elements.rendererCanvas.style.height = uiHeight + "px";
+                    sampleUI.container.style.width = (uiWidth + "px");
+                    sampleUI.container.style.height = "auto";
 
                     const pixelMap = new ImageData(width, height);
                     for (let i = 0; i < (width * height * 4); i++)
@@ -89,7 +91,7 @@ wrayThread.onmessage = (message)=>
                         pixelMap.data[i] = pixelBufferView[i]*255;
                     }
 
-                    const renderContext = Wray.ui.elements.rendererCanvas.getContext("2d");
+                    const renderContext = sampleUI.elements.canvas.getContext("2d");
                     if (renderContext) renderContext.putImageData(pixelMap, 0, 0);
                     else Wray.log("Failed to obtain the canvas's render context; can't display the rendering.");
                 }
@@ -103,7 +105,7 @@ wrayThread.onmessage = (message)=>
                 // If the user hasn't paused the rendering, request the thread marshal to
                 // render some more. Otherwise, wait until the rendering  isn't paused
                 // anymore before asking for more rendering.
-                if (!Wray.ui.pauseButton.pressed)
+                if (!sampleUI.settings.paused)
                 {
                     wrayThread.postMessage(Wray.thread_message.to.marshal.render(renderTime));
                 }
@@ -113,7 +115,7 @@ wrayThread.onmessage = (message)=>
 
                     function request_more_rendering()
                     {
-                        if (!Wray.ui.pauseButton.pressed)
+                        if (!sampleUI.settings.paused)
                         {
                             wrayThread.postMessage(Wray.thread_message.to.marshal.render(renderTime));
                             clearInterval(intervalId);
@@ -148,8 +150,8 @@ wrayThread.onmessage = (message)=>
 
         case Wray.thread_message.from.marshal.renderingFinished().name:
         {
-            Wray.ui.elements.rendererStatus.innerHTML = "";
-            Wray.ui.elements.rendererStatus.appendChild(document.createTextNode("~" + payload.avgSamplesPerPixel + " sample" +
+            sampleUI.elements.status.innerHTML = "";
+            sampleUI.elements.status.appendChild(document.createTextNode("~" + payload.avgSamplesPerPixel + " sample" +
                                                                 (payload.avgSamplesPerPixel === 1? "" : "s") +
                                                                 " per pixel (" + Math.floor(payload.samplesPerSecond/1000) +
                                                                 "k samples/sec)"));
@@ -163,53 +165,103 @@ wrayThread.onmessage = (message)=>
     }
 };
 
-Wray.ui = {};
-
-// We'll downscale the image's resolution by this multiplier when rendering it, and upscale
-// it by the same amount for display; resulting in other words in fewer but larger pixels.
-Wray.ui.renderDownscale = (Math.max(1, Math.min(16, (new URLSearchParams(window.location.search).get("pixelSize") || "1"))));
-
-// Will be set to false once Wray is ready to start rendering.
-Wray.ui.wrayIsInitializing = true;
-
-// Pre-fetch the UI's HTML elements.
-Wray.ui.elements = Object.freeze(
+sampleUI =
 {
-    statusContainer: document.getElementById("wray-status-container"),
-    rendererStatus: document.getElementById("wray-status"),
-    initNotice: document.getElementById("wray-init-notice"),
-    rendererCanvas: document.getElementById("wray-render-target"), // Expected to be a <canvas> element.
-});
-Wray.assert(Object.getOwnPropertyNames(Wray.ui.elements).every((element)=>(element !== null)),
-            "Failed to initialize the UI elements.")
+    settings:
+    {
+        // Whether rendering should be in a paused state.
+        paused: false,
 
-// Will cause a sliding animation to bring the UI (and canvas) onto the screen.
-// Prior to this, they're hidden away outside of the window.
-Wray.ui.reveal_ui = function()
-{
-    Wray.ui.wrayIsInitializing = false;
+        // The render resolution gets scaled down by the inverse of this value, but
+        // such that the display resolution is the same as the unscaled render
+        // resolution (i.e. the displayed pixels are larger).
+        pixelSize: (Math.max(1, Math.min(16, (new URLSearchParams(window.location.search).get("pixelSize") || "1")))),
+    },
 
-    Wray.ui.elements.statusContainer.style.display = "inline-block";
-    Wray.ui.elements.rendererCanvas.style.display = "inline-block";
+    container: document.getElementById("wray-ui-container"),
 
-    Wray.ui.elements.initNotice.remove();
+    elements:
+    {
+        statusContainer:      null,
+        controlsContainer:    null,
+        status:               null,
+        canvas:               null,
+        pauseButton:          null,
+        pauseButtonLabel:     null,
+        pauseButtonContainer: null,
+    },
 
-    return;
-};
+    isVisible: false,
 
-Wray.ui.pauseButton = document.getElementById("pause-button");
-Wray.ui.pauseButton.pressed = false;
-Wray.ui.pauseButton.onclick = ()=>
-{
-    Wray.ui.pauseButton.pressed = !Wray.ui.pauseButton.pressed;
+    initialize: function()
+    {
+        // Create the UI's DOM elements inside the UI container.
+        {
+            this.elements.canvas               = document.createElement("canvas");
+            this.elements.statusContainer      = document.createElement("div");
+            this.elements.controlsContainer    = document.createElement("div");
+            this.elements.status               = document.createElement("div");
+            this.elements.pauseButton          = document.createElement("i");
+            this.elements.pauseButtonLabel     = document.createElement("div");
+            this.elements.pauseButtonContainer = document.createElement("div");
 
-    Wray.ui.pauseButton.setAttribute("class", Wray.ui.pauseButton.pressed
-                                              ? "fas fa-fw fa-sm fa-play"
-                                              : "fas fa-fw fa-sm fa-pause");
-    Wray.ui.pauseButton.setAttribute("title", Wray.ui.pauseButton.pressed
-                                              ? "Resume"
-                                              : "Pause");
-    document.getElementById("pause-button-text").textContent = Wray.ui.pauseButton.pressed
-                                                               ? "paused"
-                                                               : "";
+            Wray.assert(Object.getOwnPropertyNames(this.elements).every((element)=>(element !== null)),
+                        "Invalid UI DOM elements!");
+
+            this.elements.canvas              .setAttribute("class", "canvas");
+            this.elements.status              .setAttribute("class", "status");
+            this.elements.statusContainer     .setAttribute("class", "status-container");
+            this.elements.controlsContainer   .setAttribute("class", "controls-container");
+            this.elements.pauseButton         .setAttribute("class", "fas fa-fw fa-sm fa-pause");
+            this.elements.pauseButtonLabel    .setAttribute("class", "button-label");
+            this.elements.pauseButtonContainer.setAttribute("class", "button pause");
+
+            // Add the main elements.
+            this.container.appendChild(this.elements.canvas);
+            this.container.appendChild(this.elements.statusContainer);
+
+            // Populate the status element.
+            {
+                this.elements.statusContainer.appendChild(this.elements.status);
+                this.elements.statusContainer.appendChild(this.elements.controlsContainer);
+
+                // Add the pause button.
+                this.elements.controlsContainer.appendChild(this.elements.pauseButtonContainer);
+                this.elements.pauseButtonContainer.appendChild(this.elements.pauseButtonLabel);
+                this.elements.pauseButtonContainer.appendChild(this.elements.pauseButton);
+            }
+        }
+
+        this.elements.pauseButton.pressed = false;
+        this.redraw_pause_button();
+
+        this.elements.pauseButton.onclick = ()=>
+        {
+            this.settings.paused = !this.settings.paused;
+            this.redraw_pause_button();
+        }
+
+        return;
+    },
+
+    reveal: function()
+    {
+        this.isVisible = true;
+        this.container.style.display = "inline-block";
+
+        return;
+    },
+
+    redraw_pause_button: function()
+    {
+        this.elements.pauseButton.setAttribute("class", this.settings.paused
+                                                        ? "fas fa-fw fa-sm fa-play"
+                                                        : "fas fa-fw fa-sm fa-pause");
+        this.elements.pauseButton.setAttribute("title", this.settings.paused
+                                                        ? "Resume"
+                                                        : "Pause");
+        this.elements.pauseButtonLabel.textContent = this.settings.paused
+                                                     ? "paused"
+                                                     : "";
+    },
 }

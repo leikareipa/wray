@@ -9,24 +9,13 @@
         <title>A sample rendering - Wray</title>
     </head>
     <body>
-        <!-- A note displayed while Wray initializes (i.e. while it's not rendering anything).
-             Will be hidden once rendering starts.-->
+        <!-- A note displayed while Wray initializes. Will be hidden when rendering begins.-->
         <div id="wray-init-notice">
             <div id="wray-init-spinner"></div>
         </div>
 
-        <!-- The rendering goes here.-->
-        <canvas id="wray-render-target"></canvas><br>
-        <div id="wray-status-container">
-            <div id="wray-status"></div>
-            <div id="wray-controls">
-                <div class="wray-controls-button">
-                    <div id="pause-button-text"></div>
-                    <i id="pause-button"
-                       class="fas fa-fw fa-sm fa-pause"
-                       title="Pause"></i>
-                </div>
-            </div>
+        <div id="wray-ui-container">
+            <!-- The rendering will go in here.-->
         </div>
         
         <script src="../js/wray/wray.js"></script>

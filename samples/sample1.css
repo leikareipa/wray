@@ -10,69 +10,72 @@ body
     font-family: "Roboto", sans-serif;
 }
 
-/* For the HTML5 canvas we'll render into.*/
-#wray-render-target
+#wray-ui-container
 {
-    background-color: transparent;
-    margin: 0px;
-    position: relative;
-    z-index: 3;
+    border-radius: 5px;
     border: 10px solid #565656;
-    border-bottom: none;
-    border-radius: 5px 5px 0 0;
+    background-color: #565656;
 
-    /* Pixelated upscale.*/
+    /* The correct width and height will be assigned when rendering begins.*/
+    width: 500px;
+    height: 500px;
+
+    /* Will be unhidden when rendering begins.*/
+    display: none;
+}
+
+/* For the HTML5 canvas we'll render into.*/
+#wray-ui-container > .canvas
+{
+    position: relative;
+    background-color: transparent;
+    width: 100%;
+    height: auto;
+    display: block;
+
+    /* Pixelated scaling.*/
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: -o-crisp-edges;
     image-rendering: -webkit-crisp-edges;
-
-    /* Will be unhidden when rendering begins.*/
-    display: none;
 }
 
-#wray-status-container
+#wray-ui-container .status-container
 {
-    background-color: #565656;
-    color: #c3c3c3;
-    border-radius: 0 0 5px 5px;
-    display: inline-block;
-    padding: 11px 0;
     position: relative;
-    z-index: 1;
-    margin: 0;
-    margin-top: -4px;
-    border: 10px solid #565656;
-
-    /* Will be unhidden when rendering begins.*/
-    display: none;
+    color: #c3c3c3;
+    padding: 11px 0;
+    width: 100%;
+    height: auto;
+    margin-top: 10px; /* Same height as the container's border.*/
 }
 
-#wray-controls
+#wray-ui-container .controls-container
 {
+    display: block;
     position: absolute;
     right: 0;
     top: 50%;
     transform: translateY(-50%);
 }
 
-#wray-controls .wray-controls-button
+#wray-ui-container .button
 {
     display: flex;
     align-items: center;
 }
 
-#wray-controls .wray-controls-button + .wray-controls-button
+#wray-ui-container .button + .button
 {
     margin-left: 20px;
 }
 
-#wray-controls .wray-controls-button > i
+#wray-ui-container .button i
 {
     padding: 11px;
 }
 
-#wray-controls .wray-controls-button > i:hover
+#wray-ui-container .button i:hover
 {
     color: white;
     cursor: pointer;
@@ -118,12 +121,7 @@ body
         margin: 0;
     }
 
-    #wray-render-target
-    {
-        border-radius: 0;
-    }
-
-    #wray-status-container
+    #wray-ui-container
     {
         border-radius: 0;
     }
