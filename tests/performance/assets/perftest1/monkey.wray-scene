@@ -1,7 +1,7 @@
 {
     maxRayDepth:10,
     wipeSurface:true,
-    renderThreads:"all",
+    renderThreadCount:"all",
 	epsilon:0.000001,
 
     outputResolution:

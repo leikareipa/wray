@@ -318,16 +318,16 @@ onmessage = (message)=>
 
             // Spawn workers.
             {
-                if (typeof payload.renderThreads === "undefined") payload.renderThreads = "half";
+                if (typeof payload.renderThreadCount === "undefined") payload.renderThreadCount = "half";
 
                 const maxThreadsSupported = ((typeof navigator.hardwareConcurrency === "undefined")? 4 : navigator.hardwareConcurrency);
                 const numWorkerThreads = (()=>
                 {
-                    switch (String(payload.renderThreads).toLowerCase())
+                    switch (String(payload.renderThreadCount).toLowerCase())
                     {
                         case "all":  return maxThreadsSupported;
                         case "half": return ((maxThreadsSupported / 2) || 1);
-                        default:     return Number(payload.renderThreads);
+                        default:     return Number(payload.renderThreadCount);
                     }
                 })();
 
