@@ -16,9 +16,10 @@ Wray.bvh_aabb = function(mesh = [Wray.triangle()], isLeaf = false)
     {
         let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE, minZ = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE, maxY = -Number.MAX_VALUE, maxZ = -Number.MAX_VALUE;
-        mesh.forEach((triangle)=>
+        
+        for (const triangle of mesh)
         {
-            triangle.vertices.forEach((vertex)=>
+            for (const vertex of triangle.vertices)
             {
                 minX = Math.min(minX, vertex.x);
                 minY = Math.min(minY, vertex.y);
@@ -27,8 +28,8 @@ Wray.bvh_aabb = function(mesh = [Wray.triangle()], isLeaf = false)
                 maxX = Math.max(maxX, vertex.x);
                 maxY = Math.max(maxY, vertex.y);
                 maxZ = Math.max(maxZ, vertex.z);
-            })
-        });
+            }
+        }
 
         return [Wray.vector3(minX, minY, minZ), Wray.vector3(maxX, maxY, maxZ)];
     })();

@@ -55,7 +55,8 @@ Wray.surface = function(width = 0, height = 0)
         transferable_pixel_array: function()
         {
             const pixelArray = new Float64Array(width * height * 4);
-            pixelBuffer.forEach((pixel)=>
+
+            for (const pixel of pixelBuffer)
             {
                 const idx = ((pixel.x + pixel.y * width) * 4);
                 const color = this.pixel_color_at(pixel.x, pixel.y);
@@ -64,7 +65,7 @@ Wray.surface = function(width = 0, height = 0)
                 pixelArray[idx+1] = color.green;
                 pixelArray[idx+2] = color.blue;
                 pixelArray[idx+3] = 1;
-            });
+            }
 
             return {pixelArray, width, height};
         },

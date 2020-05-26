@@ -120,11 +120,11 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
             {
                 if (aabb.isLeaf)
                 {
-                    aabb.triangles.forEach((triangle)=>
+                    for (const triangle of aabb.triangles)
                     {
                         const distance = ray.intersect_triangle(triangle);
                         if ((distance !== null) && (distance < hit.distance)) hit = {triangle, distance};
-                    });
+                    }
 
                     return;
                 }
@@ -149,7 +149,7 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
 
             // See whether there's reason to terminate the ray.
             {
-                if (!intersected) return Wray.sky_color(ray.dir);
+                if (!intersected) return (!depth? Wray.skyModels.black() : Wray.sky_color(ray.dir));
 
                 if (material.isEmissive) return material.emission;
 
