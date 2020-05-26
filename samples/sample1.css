@@ -15,6 +15,7 @@ body
     border-radius: 5px;
     border: 10px solid #565656;
     background-color: #565656;
+    box-shadow: 0 0px 0 1px black;
 
     /* The correct width and height will be assigned when rendering begins.*/
     width: 500px;
