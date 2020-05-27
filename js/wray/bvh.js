@@ -115,7 +115,7 @@ Wray.bvh = function(scene = [Wray.triangle()])
                     })();
 
                     const leftMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, proposedLeftMin, proposedLeftMax));
-                    const rightMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, proposedRightMin, proposedRightMax));
+                    const rightMesh = mesh.filter(triangle=>!is_triangle_fully_inside_box(triangle, proposedLeftMin, proposedLeftMax));
 
                     const leftVolume = box_volume(proposedLeftMin, proposedLeftMax);
                     const rightVolume = box_volume(proposedRightMin, proposedRightMax);
