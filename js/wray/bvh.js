@@ -16,7 +16,7 @@ Wray.bvh_aabb = function(mesh = [Wray.triangle()], isLeaf = false)
     {
         let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE, minZ = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE, maxY = -Number.MAX_VALUE, maxZ = -Number.MAX_VALUE;
-        
+
         for (const triangle of mesh)
         {
             for (const vertex of triangle.vertices)
@@ -62,7 +62,7 @@ Wray.bvh = function(scene = [Wray.triangle()])
     const baseAABB = Wray.bvh_aabb(scene, false);
     
     // How many splits we're allowed to do, at most, before declaring a leaf node and stopping.
-    const maxDepth = 20;
+    const maxDepth = 30;
 
     // A split must have at most this many triangles in it to be eligible to act as a leaf.
     const minNumTris = 3;
@@ -78,20 +78,70 @@ Wray.bvh = function(scene = [Wray.triangle()])
             // Decide on which axis to split on.
             const axesAvailable = ["x", "y", "z"];
             const splitAxis = axesAvailable[depth % axesAvailable.length];
-            const splitStart = parentAABB.min[splitAxis] + ((parentAABB.max[splitAxis] - parentAABB.min[splitAxis]) / 2);
             const leftMin = parentAABB.min;
-            const leftMax = (()=>
+            const leftMax = (()=> // Propose random split positions along the chosen axis and use the one that has the lowest cost.
             {
-                switch (splitAxis)
+                const numSplits = 5;
+                const costNodeIntersection = 1;
+                const costTriangleIntersection = 5;
+
+                let leftMax = parentAABB.max;
+                let lowestSplitCost = Infinity;
+
+                for (let i = 0; i < numSplits; i++)
                 {
-                    case "x": return Wray.vector3(splitStart, parentAABB.max.y, parentAABB.max.z);
-                    case "y": return Wray.vector3(parentAABB.max.x, splitStart, parentAABB.max.z);
-                    case "z": return Wray.vector3(parentAABB.max.x, parentAABB.max.y, splitStart);
-                    default: Wray.assert(0, "Unknown BVH split direction."); return Wray.vector3(0, 0, 0);
+                    const proposedSplitStart = (parentAABB.min[splitAxis] + ((parentAABB.max[splitAxis] - parentAABB.min[splitAxis]) * Math.random()));
+                    const proposedLeftMin = parentAABB.min;
+                    const proposedRightMax = parentAABB.max;
+                    const proposedLeftMax = (()=>
+                    {
+                        switch (splitAxis)
+                        {
+                            case "x": return Wray.vector3(proposedSplitStart, parentAABB.max.y, parentAABB.max.z);
+                            case "y": return Wray.vector3(parentAABB.max.x, proposedSplitStart, parentAABB.max.z);
+                            case "z": return Wray.vector3(parentAABB.max.x, parentAABB.max.y, proposedSplitStart);
+                            default: Wray.assert(0, "Unknown BVH split direction."); return Wray.vector3(0, 0, 0);
+                        }
+                    })();
+                    const proposedRightMin = (()=>
+                    {
+                        switch (splitAxis)
+                        {
+                            case "x": return Wray.vector3(proposedSplitStart, parentAABB.min.y, parentAABB.min.z);
+                            case "y": return Wray.vector3(parentAABB.min.x, proposedSplitStart, parentAABB.min.z);
+                            case "z": return Wray.vector3(parentAABB.min.x, parentAABB.min.y, proposedSplitStart);
+                            default: Wray.assert(0, "Unknown BVH split direction."); return Wray.vector3(0, 0, 0);
+                        }
+                    })();
+
+                    const leftMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, proposedLeftMin, proposedLeftMax));
+                    const rightMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, proposedRightMin, proposedRightMax));
+
+                    const leftVolume = box_volume(proposedLeftMin, proposedLeftMax);
+                    const rightVolume = box_volume(proposedRightMin, proposedRightMax);
+        
+                    const costOfSplit = (costNodeIntersection +
+                                         (leftVolume * leftMesh.length * costTriangleIntersection) +
+                                         (rightVolume * rightMesh.length * costTriangleIntersection));
+
+                    if (costOfSplit < lowestSplitCost)
+                    {
+                        lowestSplitCost = costOfSplit;
+                        leftMax = proposedLeftMax;
+                    }
+                }
+
+                return leftMax;
+
+                function box_volume(min, max)
+                {
+                    return ((2.0 * (max.z - min.z)*(max.x - min.x)) +
+                            (2.0 * (max.z - min.z)*(max.y - min.y)) +
+                            (2.0 * (max.x - min.x)*(max.y - min.y)));
                 }
             })();
 
-            // Distribute the AABB's triangles between the two new AABBs.
+            // Distribute the parent AABB's triangles between the two new AABBs that the parent was split into.
             const leftMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, leftMin, leftMax));
             const rightMesh = mesh.filter(triangle=>!is_triangle_fully_inside_box(triangle, leftMin, leftMax));
             Wray.assert((leftMesh.length + rightMesh.length === mesh.length),
@@ -103,8 +153,7 @@ Wray.bvh = function(scene = [Wray.triangle()])
             split(parentAABB.mutable.left, leftMesh, depth + 1);
             split(parentAABB.mutable.right, rightMesh, depth + 1);
 
-            // A helper function; returns true if the given triangle is fully inside the given AABB.
-            // Otherwise, returns false.
+            // Returns true if the given triangle is fully inside the given AABB; otherwise returns false.
             function is_triangle_fully_inside_box(triangle = Wray.triangle(), min = Wray.vector3(), max = Wray.vector3())
             {
                 return triangle.vertices.every(vertex=>
