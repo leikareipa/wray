@@ -46,7 +46,14 @@ Wray.bvh_aabb = function(mesh = [Wray.triangle()], isLeaf = false)
             // This AABB's left and right child AABBs.
             left: null,
             right: null,
-        }
+        },
+
+        volume: function()
+        {
+            return ((2.0 * (max.z - min.z) * (max.x - min.x)) +
+                    (2.0 * (max.z - min.z) * (max.y - min.y)) +
+                    (2.0 * (max.x - min.x) * (max.y - min.y)));
+        },
     });
     return publicInterface;
 }
@@ -92,7 +99,6 @@ Wray.bvh = function(scene = [Wray.triangle()])
                 {
                     const proposedSplitStart = (parentAABB.min[splitAxis] + ((parentAABB.max[splitAxis] - parentAABB.min[splitAxis]) * Math.random()));
                     const proposedLeftMin = parentAABB.min;
-                    const proposedRightMax = parentAABB.max;
                     const proposedLeftMax = (()=>
                     {
                         switch (splitAxis)
@@ -103,26 +109,13 @@ Wray.bvh = function(scene = [Wray.triangle()])
                             default: Wray.assert(0, "Unknown BVH split direction."); return Wray.vector3(0, 0, 0);
                         }
                     })();
-                    const proposedRightMin = (()=>
-                    {
-                        switch (splitAxis)
-                        {
-                            case "x": return Wray.vector3(proposedSplitStart, parentAABB.min.y, parentAABB.min.z);
-                            case "y": return Wray.vector3(parentAABB.min.x, proposedSplitStart, parentAABB.min.z);
-                            case "z": return Wray.vector3(parentAABB.min.x, parentAABB.min.y, proposedSplitStart);
-                            default: Wray.assert(0, "Unknown BVH split direction."); return Wray.vector3(0, 0, 0);
-                        }
-                    })();
 
                     const leftMesh = mesh.filter(triangle=>is_triangle_fully_inside_box(triangle, proposedLeftMin, proposedLeftMax));
                     const rightMesh = mesh.filter(triangle=>!is_triangle_fully_inside_box(triangle, proposedLeftMin, proposedLeftMax));
-
-                    const leftVolume = box_volume(proposedLeftMin, proposedLeftMax);
-                    const rightVolume = box_volume(proposedRightMin, proposedRightMax);
         
                     const costOfSplit = (costNodeIntersection +
-                                         (leftVolume * leftMesh.length * costTriangleIntersection) +
-                                         (rightVolume * rightMesh.length * costTriangleIntersection));
+                                         (Wray.bvh_aabb(leftMesh).volume() * leftMesh.length * costTriangleIntersection) +
+                                         (Wray.bvh_aabb(rightMesh).volume() * rightMesh.length * costTriangleIntersection));
 
                     if (costOfSplit < lowestSplitCost)
                     {
@@ -132,13 +125,6 @@ Wray.bvh = function(scene = [Wray.triangle()])
                 }
 
                 return leftMax;
-
-                function box_volume(min, max)
-                {
-                    return ((2.0 * (max.z - min.z)*(max.x - min.x)) +
-                            (2.0 * (max.z - min.z)*(max.y - min.y)) +
-                            (2.0 * (max.x - min.x)*(max.y - min.y)));
-                }
             })();
 
             // Distribute the parent AABB's triangles between the two new AABBs that the parent was split into.
