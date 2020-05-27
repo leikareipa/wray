@@ -3,10 +3,13 @@ A vanilla path tracer written in vanilla JavaScript. Primarily intended as a sim
 
 You can view a live sample of the renderer in action [here](https://www.tarpeeksihyvaesoft.com/s/wray/samples/sample1.html?threads=all&pixelSize=4).
 
+![](screenshots/ajax-4x.png)
+A rendering of the Ajax bust, which was pre-decimated to about 140,000 triangles. (Model &copy; Jotero GbR.)
+
 ### Features
 - Vanilla path tracing in the browser
 - BVH tree to accelerate ray&ndash;triangle intersections
-- Multithreading via Web Workers
+- Multithreaded using Web Workers
 
 # Usage
 ### Setting up
