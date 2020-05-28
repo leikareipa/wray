@@ -19,9 +19,10 @@ Wray.material = Object.freeze(
             albedo,
             scatter: (inRay = Wray.ray(), surfaceNormal = Wray.vector3())=>
             {
-                const outRay = inRay.aimAt.random_in_hemisphere(surfaceNormal);
+                const outRay = inRay.aimAt.random_in_hemisphere_cosine_weighted(surfaceNormal);
                 const brdf = surfaceNormal.dot(outRay.dir) * (albedo / Math.PI);
-                const pdf = 0.15915494309;//<-(1 / (2 * Math.PI));
+                const pdf = (outRay.dir.dot(surfaceNormal) / Math.PI); // For cosine-weighted.
+                //const pdf = (1 / (2 * Math.PI));                     // For non-cosine-weighted.
                 return {outRay, bsdf:brdf/pdf};
             }
         });

@@ -25,14 +25,48 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
             // the hemisphere of the given normal.
             random_in_hemisphere: function(normal = Wray.vector3())
             {
-                for (;;)
-                {
-                    const newDir = Wray.vector3((Math.random() - Math.random()),
-                                                (Math.random() - Math.random()),
-                                                (Math.random() - Math.random())).normalized();
+                let newDir = Wray.vector3((Math.random() - Math.random()),
+                                          (Math.random() - Math.random()),
+                                          (Math.random() - Math.random())).normalized();
 
-                    if (normal.dot(newDir) >= 0) return Wray.ray(pos, newDir);
+                if (normal.dot(newDir) < 0)
+                {
+                    newDir = Wray.vector3((newDir.x * -1),
+                                          (newDir.y * -1),
+                                          (newDir.z * -1));
                 }
+                
+                return Wray.ray(pos, newDir);
+            },
+
+            // Returns a ray at this position but pointed at a random direction about
+            // the hemisphere of the given normal. The direction is cosine-weighted,
+            // i.e. more likely to be closer to the normal.
+            random_in_hemisphere_cosine_weighted: function(normal = Wray.vector3())
+            {
+                const rand1 = Math.random();
+                const rand2 = Math.random();
+
+                // Adapted from http://www.rorydriscoll.com/2009/01/07/better-sampling/.
+                // Get a cosine-weighted vector (x, y, z) about the hemisphere.
+                const r = Math.sqrt(rand1);
+                const theta = (2 * Math.PI * rand2);
+                const x = (r * Math.cos(theta));
+                const y = Math.sqrt(Math.max(0, 1 - rand1));
+                const z = (r * Math.sin(theta));
+
+                // Adapted from https://bheisler.github.io/post/writing-gpu-accelerated-path-tracer-part-2/.
+                // Transform the cosine-weighted vector's hemisphere to the direction of
+                // the normal.
+                const t = (Math.abs(normal.x) > Math.abs(normal.y))
+                          ? Wray.vector3(normal.z, 0, -normal.x).normalized()
+                          : Wray.vector3(0, -normal.z, normal.y).normalized();
+                const b = normal.cross(t);
+                const newDir = Wray.vector3((x * b.x + y * normal.x + z * t.x),
+                                            (x * b.y + y * normal.y + z * t.y),
+                                            (x * b.z + y * normal.z + z * t.z)).normalized();
+                                
+                return Wray.ray(pos, newDir);
             },
 
             reflected: function(normal = Wray.vector3())
@@ -149,7 +183,7 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
 
             // See whether there's reason to terminate the ray.
             {
-                if (!intersected) return (!depth? Wray.skyModels.black() : Wray.sky_color(ray.dir));
+                if (!intersected) return Wray.sky_color(ray.dir);
 
                 if (material.isEmissive) return material.emission;
 
