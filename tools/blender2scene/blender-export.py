@@ -36,7 +36,8 @@ with open(outFilename, 'w') as f:
 
     f.write("\t\t// Shorthands.\n")
     f.write("\t\tconst t = Wray.triangle;\n")
-    f.write("\t\tconst v = Wray.vector3\n\n")
+    f.write("\t\tconst vr = Wray.vertex\n")
+    f.write("\t\tconst vc = Wray.vector3\n\n")
 
     # Write the materials.
     f.write("\t\t// Set up the materials.\n")
@@ -70,7 +71,14 @@ with open(outFilename, 'w') as f:
             for v, l in zip(poly.vertices, poly.loop_indices):
                 # Vertices.
                 vd = mesh.data.vertices[v].co
-                f.write("v(%.4f,%.4f,%.4f)," % (vd[0], vd[1], vd[2]))
+                f.write("vr(vc(%.4f,%.4f,%.4f)" % (vd[0], vd[1], vd[2]))
+                # If the polygon should have smooth shading, we'll write its vertex normals
+                # as well. Otherwise, the face normal can be derived from the vertex positions.
+                if poly.use_smooth:
+                    vn = mesh.data.vertices[v].normal
+                    f.write(",vc(%.4f,%.4f,%.4f))," % (vn[0], vn[1], vn[2]))
+                else:
+                    f.write(",null),")
             f.write("]")
             # Material.
             if len(mesh.material_slots):

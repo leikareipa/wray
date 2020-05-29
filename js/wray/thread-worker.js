@@ -31,6 +31,7 @@ importScripts("../../js/wray/assert.js");
 importScripts("../../js/wray/log.js");
 importScripts("../../js/wray/matrix44.js");
 importScripts("../../js/wray/color.js");
+importScripts("../../js/wray/vertex.js");
 importScripts("../../js/wray/vector.js");
 importScripts("../../js/wray/ray.js");
 importScripts("../../js/wray/surface.js");

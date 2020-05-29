@@ -92,27 +92,28 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
         intersect_triangle: function(triangle = Wray.triangle())
         {
             const ray = this;
+            const noHit = [null, 0, 0];
 
-            const e1 = triangle.vertices[1].sub(triangle.vertices[0]);
-            const e2 = triangle.vertices[2].sub(triangle.vertices[0]);
+            const e1 = triangle.vertices[1].position.sub(triangle.vertices[0].position);
+            const e2 = triangle.vertices[2].position.sub(triangle.vertices[0].position);
 
             const pv = ray.dir.cross(e2);
             const det = e1.dot(pv);
-            if ((det > -Wray.epsilon) && (det < Wray.epsilon)) return null;
+            if ((det > -Wray.epsilon) && (det < Wray.epsilon)) return noHit;
 
             const invD = 1.0 / det;
-            const tv = ray.pos.sub(triangle.vertices[0]);
+            const tv = ray.pos.sub(triangle.vertices[0].position);
             const u = (tv.dot(pv) * invD);
-            if ((u < 0) || (u > 1)) return null;
+            if ((u < 0) || (u > 1)) return noHit;
 
             const qv = tv.cross(e1);
             const v = (ray.dir.dot(qv) * invD);
-            if ((v < 0) || ((u + v) > 1)) return null;
+            if ((v < 0) || ((u + v) > 1)) return noHit;
 
             const distance = (e2.dot(qv) * invD);
-            if (distance <= 0) return null; 
+            if (distance <= 0) return noHit; 
 
-            return distance;
+            return [distance, u, v];
         },
 
         // Adapted from https://tavianator.com/fast-branchless-raybounding-box-intersections/.
@@ -149,15 +150,30 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
         {
             const ray = this;
 
-            let hit = {triangle:null, distance:Infinity};
+            const intersectionInfo = {
+                triangle: null,
+                distance: Infinity,
+                u: 0,
+                v: 0,
+                w: 0,
+            };
+
             (function trace(aabb = Wray.bvh_aabb())
             {
                 if (aabb.isLeaf)
                 {
                     for (const triangle of aabb.triangles)
                     {
-                        const distance = ray.intersect_triangle(triangle);
-                        if ((distance !== null) && (distance < hit.distance)) hit = {triangle, distance};
+                        const [distance, u, v] = ray.intersect_triangle(triangle);
+
+                        if ((distance !== null) && (distance < intersectionInfo.distance))
+                        {
+                            intersectionInfo.triangle = triangle;
+                            intersectionInfo.distance = distance;
+                            intersectionInfo.u = u;
+                            intersectionInfo.v = v;
+                            intersectionInfo.w = (1 - u - v);
+                        }
                     }
 
                     return;
@@ -167,7 +183,7 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
                 if (ray.intersect_aabb(aabb.mutable.right)) trace(aabb.mutable.right);
             })(bvh.base);
 
-            return (hit.triangle === null? null : hit);
+            return (intersectionInfo.triangle === null? null : intersectionInfo);
         },
 
         // Returns the combined color of this ray's random scatterings in the given scene. The ray's
@@ -192,8 +208,18 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
 
             // Otherwise, cast out a new ray from the current intersection point.
             {
-                const rayAtIntersection = ray.step(intersected.distance).step(Wray.epsilon, intersected.triangle.normal);
-                const {outRay, bsdf} = intersected.triangle.material.scatter(rayAtIntersection, intersected.triangle.normal);
+                const interpolatedNormal = Wray.vector3((intersected.triangle.vertices[0].normal.x * intersected.w) +
+                                                        (intersected.triangle.vertices[1].normal.x * intersected.u) +
+                                                        (intersected.triangle.vertices[2].normal.x * intersected.v),
+                                                        (intersected.triangle.vertices[0].normal.y * intersected.w) +
+                                                        (intersected.triangle.vertices[1].normal.y * intersected.u) +
+                                                        (intersected.triangle.vertices[2].normal.y * intersected.v),
+                                                        (intersected.triangle.vertices[0].normal.z * intersected.w) +
+                                                        (intersected.triangle.vertices[1].normal.z * intersected.u) +
+                                                        (intersected.triangle.vertices[2].normal.z * intersected.v)).normalized();
+                                                        
+                const rayAtIntersection = ray.step(intersected.distance).step(Wray.epsilon, intersected.triangle.faceNormal);
+                const {outRay, bsdf} = intersected.triangle.material.scatter(rayAtIntersection, interpolatedNormal);
                 const inLight = outRay.trace(sceneBVH, depth + 1);
                 return Wray.color_rgb(inLight.red*bsdf * material.color.red,
                                       inLight.green*bsdf * material.color.green,
