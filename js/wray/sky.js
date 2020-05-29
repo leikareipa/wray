@@ -27,4 +27,4 @@ Wray.skyModels = Object.freeze(
 });
 
 // Which of the sky models will be used when rendering.
-Wray.sky_color = Wray.skyModels.cie_overcast;
+Wray.sky_color = Wray.skyModels.black;

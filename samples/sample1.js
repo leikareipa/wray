@@ -24,7 +24,7 @@ wrayRenderer.onmessage = (message)=>
     {
         case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            const sceneFileName = "./assets/sample1/cube-on-floor.wray-scene";
+            const sceneFileName = "./assets/sample1/colorball.wray-scene";
 
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
