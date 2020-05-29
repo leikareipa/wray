@@ -3,7 +3,7 @@ A vanilla path tracer written in vanilla JavaScript. Primarily intended as a sim
 
 You can view a live sample of the renderer in action [here](https://www.tarpeeksihyvaesoft.com/s/wray/samples/sample1.html?threads=all&pixelSize=4).
 
-![](screenshots/ajax.png)
+![](screenshots/ajax-smooth-shading.png)
 A rendering of the Ajax bust, which was pre-decimated to about 140,000 triangles. (Model &copy; Jotero GbR.)
 
 ### Features
