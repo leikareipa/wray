@@ -9,7 +9,7 @@
 
 "use strict";
 
-Wray.surface = function(width = 0, height = 0)
+Wray.surface = function(width = 1280, height = 720)
 {
     Wray.assert((typeof width === "number" && typeof height === "number"),
                 "Expected width and height to be numeric values.");
