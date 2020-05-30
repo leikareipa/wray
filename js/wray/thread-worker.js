@@ -43,17 +43,9 @@ importScripts("../../js/wray/bvh.js");
 
 // A unique value that identifies this worker from among any other workers.
 let id = null;
-
-let renderWidth = 2;
-let renderHeight = 2;
-let renderSurface = Wray.surface(renderWidth, renderHeight);
 let sceneBVH = null;
-let camera = Wray.camera(Wray.vector3(0, 0, 0),
-                         Wray.vector3(0, 0, 1),
-                         0,
-                         renderSurface,
-                         17,
-                         true);
+let renderSurface = null;
+let camera = null;
 
 // Handles messages sent us by the marshal thread.
 onmessage = (message)=>
@@ -83,8 +75,14 @@ onmessage = (message)=>
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case Wray.thread_message.to.worker.assignRenderSettings().name:
         {
+            Wray.assert((typeof payload.workerId != "undefined"), "No worker ID given.");
             id = payload.workerId;
-            renderSurface = Wray.surface(payload.resolution.width, payload.resolution.height);
+
+            Wray.assert((typeof payload.outputResolution !== "undefined"), "No render resolution given.");
+            renderSurface = Wray.surface(payload.outputResolution.width, payload.outputResolution.height);
+
+            Wray.assert((typeof payload.camera !== "undefined"), "No camera given.");
+            /// TODO: Verify that the camera object contains the required properties.
             camera = Wray.camera(Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z),
                                  Wray.vector3(payload.camera.axisAngle.x, payload.camera.axisAngle.y, payload.camera.axisAngle.z),
                                  payload.camera.axisAngle.w,
@@ -92,18 +90,58 @@ onmessage = (message)=>
                                  payload.camera.fov,
                                  payload.camera.antialiasing);
 
-            if (payload.triangles !== null)
+            // Modify global render parameters.
+            {
+                if (typeof payload.epsilon !== "undefined")
+                {
+                    Wray.epsilon = payload.epsilon;
+                }
+
+                if (typeof payload.maxRayDepth !== "undefined")
+                {
+                    Wray.maxRayDepth = payload.maxRayDepth;
+                }
+
+                if (typeof payload.sky !== "undefined" &&
+                    typeof payload.sky.model !== "undefined")
+                {
+                    switch (payload.sky.model)
+                    {
+                        case "cie-overcast":
+                        {
+                            const direction = (typeof payload.sky.zenithDirection === "undefined")
+                                            ? {x:undefined, y:undefined, z:undefined}
+                                            : payload.sky.zenithDirection;
+
+                            const luminance = (typeof payload.sky.zenithLuminance === "undefined")
+                                            ? undefined
+                                            : payload.sky.zenithLuminance;
+
+                            Wray.sky_color = Wray.skyModels.cie_overcast(Wray.vector3(direction.x, direction.y, direction.z), luminance);
+
+                            break;
+                        }
+                        case "solid-fill":
+                        {
+                            const color = (typeof payload.sky.fillColor === "undefined")
+                                        ? {r:undefined, g:undefined, b:undefined}
+                                        : payload.sky.fillColor;
+
+                            Wray.sky_color = Wray.skyModels.solid_fill(color.r, color.g, color.b);
+
+                            break;
+                        }
+                        default: Wray.warning(`Unknown sky model "${payload.sky.model}".`); break;
+                    }
+                }
+            }
+
+            if (typeof payload.triangles !== "undefined")
             {
                 const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
                 sceneBVH = Wray.bvh(sceneTriangles);
 
                 postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} seconds.`));
-            }
-            else
-            {
-                postMessage(Wray.thread_message.from.worker.renderingFailed(id, "Invalid mesh file."));
-
-                break;
             }
 
             postMessage(Wray.thread_message.from.worker.readyToRender(id));

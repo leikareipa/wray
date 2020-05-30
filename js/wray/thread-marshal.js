@@ -88,17 +88,8 @@ importScripts("../../js/wray/bvh.js");
 
 // Initialize the renderer's mutable parameters. These will be set to more suitable values
 // by the user, later, via postMessage() from the parent thread.
-let renderWidth = 2;
-let renderHeight = 2;
-let sceneBVH = null;
-let sceneTriangleString = null;
-let renderSurface = Wray.surface(renderWidth, renderHeight);
-let camera = Wray.camera(Wray.vector3(0, 0, 0),
-                         Wray.vector3(0, 0, 1),
-                         0,
-                         renderSurface,
-                         17,
-                         true);
+let renderSurface = null;
+let sceneSettings = null;
 
 let numWorkersInitialized = 0;
 let numWorkersReadyToRender = 0;
@@ -138,30 +129,7 @@ function worker_message_handler(message)
                 for (const worker of workers)
                 {
                     worker.postMessage(Wray.thread_message.to.worker.assignRenderSettings({
-                        resolution:
-                        {
-                            width: renderWidth,
-                            height: renderHeight,
-                        },
-                        camera:
-                        {
-                            position:
-                            {
-                                x: camera.pos.x,
-                                y: camera.pos.y,
-                                z: camera.pos.z,
-                            },
-                            axisAngle:
-                            {
-                                x: camera.axis.x,
-                                y: camera.axis.y,
-                                z: camera.axis.z,
-                                w: camera.angle,
-                            },
-                            fov: camera.fov,
-                            antialiasing: camera.antialiasing,
-                        },
-                        triangles: sceneTriangleString,
+                        ...sceneSettings,
                         workerId: worker.id,
                     }));
                 }
@@ -187,11 +155,11 @@ function worker_message_handler(message)
                 {
                     const pixelData = new Float64Array(renderBuffer.pixels);
 
-                    for (let y = 0; y < renderHeight; y++)
+                    for (let y = 0; y < renderSurface.height; y++)
                     {
-                        for (let x = 0; x < renderWidth; x++)
+                        for (let x = 0; x < renderSurface.width; x++)
                         {
-                            const idx = ((x + y * renderWidth) * 4);
+                            const idx = ((x + y * renderSurface.width) * 4);
                             const color = Wray.color_rgb(pixelData[idx+0],
                                                          pixelData[idx+1],
                                                          pixelData[idx+2]);
@@ -277,9 +245,9 @@ onmessage = (message)=>
         // to messages; but any such messages will likely be queued for when the rendering is finished.
         case Wray.thread_message.to.marshal.render().name:
         {
-            if (sceneTriangleString === null)
+            if (sceneSettings === null)
             {
-                postMessage(Wray.thread_message.from.marshal.renderingFailed("No scene mesh specified."));
+                postMessage(Wray.thread_message.from.marshal.renderingFailed("No scene has been specified for rendering."));
 
                 break;
             }
@@ -310,16 +278,12 @@ onmessage = (message)=>
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case Wray.thread_message.to.marshal.assignRenderSettings().name:
         {
+            sceneSettings = payload;
             numWorkersReadyToRender = 0;
-
-            if (typeof payload.epsilon !== "undefined")
-            {
-                Wray.epsilon = payload.epsilon;
-            }
 
             // Spawn workers.
             {
-                if (typeof payload.renderThreadCount === "undefined") payload.renderThreadCount = "half";
+                Wray.assert((typeof payload.renderThreadCount !== "undefined"), "Missing the thread count for rendering.");
 
                 const maxThreadsSupported = ((typeof navigator.hardwareConcurrency === "undefined")? 4 : navigator.hardwareConcurrency);
                 const numWorkerThreads = (()=>
@@ -347,54 +311,8 @@ onmessage = (message)=>
                 }
             }
 
-            if (typeof payload.triangles !== "undefined")
-            {
-                sceneTriangleString = payload.triangles;
-                const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
-                sceneBVH = Wray.bvh(sceneTriangles);
-            }
-
-            if (typeof payload.maxRayDepth !== "undefined")
-            {
-                Wray.maxRayDepth = payload.maxRayDepth;
-            }
-
-            if (typeof payload.outputResolution !== "undefined")
-            {
-                if (typeof payload.outputResolution.width !== "undefined") renderWidth = Math.floor(payload.outputResolution.width);
-                if (typeof payload.outputResolution.height !== "undefined") renderHeight = Math.floor(payload.outputResolution.height);
-
-                renderSurface = Wray.surface(renderWidth, renderHeight);
-            }
-
-            if (typeof payload.camera !== "undefined")
-            {
-                let pos = camera.pos,
-                    axis = camera.axis,
-                    angle = camera.angle,
-                    fov = camera.fov,
-                    antialiasing = camera.antialiasing;
-
-                if (typeof payload.camera.axisAngle !== "undefined")
-                {
-                    axis = Wray.vector3(payload.camera.axisAngle.x, payload.camera.axisAngle.y, payload.camera.axisAngle.z).normalized();
-                    angle = payload.camera.axisAngle.w;
-                }
-                if (typeof payload.camera.position !== "undefined")
-                {
-                    pos = Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z);
-                }
-                if (typeof payload.camera.fov !== "undefined")
-                {
-                    fov = payload.camera.fov;
-                }
-                if (typeof payload.camera.antialiasing !== "undefined")
-                {
-                    antialiasing = payload.camera.antialiasing;
-                }
-
-                camera = Wray.camera(pos, axis, angle, renderSurface, fov, antialiasing);
-            }
+            Wray.assert((typeof payload.outputResolution !== "undefined"), "No render resolution specified.");
+            renderSurface = Wray.surface(payload.outputResolution.width, payload.outputResolution.height);
 
             // Note: Though we can't do any rendering with 0 workers, we can do other
             // things, like certain performance tests, which is why we may've been

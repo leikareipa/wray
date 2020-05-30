@@ -6,7 +6,17 @@
 
 "use strict";
 
-Wray.log = function(string = "")
+Wray.warning = function(string = "")
+{
+    Wray.log(string, "warning");
+}
+
+Wray.error = function(string = "")
+{
+    Wray.log(string, "error");
+}
+
+Wray.log = function(string = "", priority = "normal")
 {
     string = String(string);
 
@@ -17,7 +27,17 @@ Wray.log = function(string = "")
 
     if (Wray.in_window_thread())
     {
-        console.log("Wray: " + string);
+        const logger_fn = (()=>
+        {
+            switch (priority)
+            {
+                default: case "normal": return console.log;
+                case "warning": return console.warn;
+                case "error": return console.error;
+            }
+        })();
+
+        logger_fn(`Wray: ${string}`);
     }
     else
     {

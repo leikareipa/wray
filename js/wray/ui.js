@@ -34,7 +34,7 @@ Wray.ui = function(container = null)
             // The render resolution gets scaled down by the inverse of this value, but
             // such that the display resolution is the same as the unscaled render
             // resolution (i.e. the displayed pixels are larger).
-            pixelSize: (Math.max(1, Math.min(16, (new URLSearchParams(window.location.search).get("pixelSize") || "1")))),
+            pixelSize: (Math.max(1, Math.min(128, (new URLSearchParams(window.location.search).get("pixelSize") || "1")))),
 
             // The number of threads to render with. Valid values are "all" to use all
             // available threads, "half" to use half of the available threads, or a positive

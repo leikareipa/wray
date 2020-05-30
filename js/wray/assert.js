@@ -32,7 +32,7 @@ Wray.assert = function(condition = false, failMessage = "")
         }
         else
         {
-            Wray.log("Assertion failure (ignored): " + failMessage);
+            Wray.error("Assertion failure (ignored): " + failMessage);
         }
     }
 }
