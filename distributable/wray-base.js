@@ -1,6 +1,6 @@
 // WHAT: Concatenated JavaScript source files
 // PROGRAM: Wray
-// VERSION: live (30 May 2020 19:46:48 UTC)
+// VERSION: live (30 May 2020 21:33:47 UTC)
 // AUTHOR: Tarpeeksi Hyvae Soft
 // LINK: https://www.github.com/leikareipa/wray/
 // LINK: https://www.tarpeeksihyvaesoft.com/
@@ -64,6 +64,33 @@ Wray.ui = function(container = null)
 {
     Wray.assert((container instanceof HTMLElement), "Invalid UI container.");
 
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // The render resolution gets scaled down by the inverse of this value, but
+    // such that the display resolution is the same as the unscaled render
+    // resolution (i.e. the displayed pixels are larger).
+    const pixelSize = (Math.max(1, Math.min(128, ~~(urlParams.get("pixelSize") || "1"))));
+
+    // The pixel size of the rendered image when displayed. The resolution in
+    // which the image is rendered is (resolution / pixelSize). Note that the
+    // given resolution will be adjusted so that the width and height divided
+    // by the pixel size result in integers.
+    const resolution = (()=>
+    {
+        const userSuppliedValue = (urlParams.get("resolution") || "1280x720").replace(/\s+/g, "");
+        const [width, height] = userSuppliedValue.split("x");
+
+        return {
+            width: ~~((~~Number(width) || 1280) / pixelSize),
+            height: ~~((~~Number(height) || 720) / pixelSize),
+        }
+    })();
+
+    // The number of threads to render with. Valid values are "all" to use all
+    // available threads, "half" to use half of the available threads, or a positive
+    // number specifying the exact thread count.
+    const threadCount = (urlParams.get("threads") || "all");
+
     return {
         // If you modify these values while the code is running, make sure to
         // update the UI's state to reflect the new value(s).
@@ -72,15 +99,9 @@ Wray.ui = function(container = null)
             // Whether rendering should be in a paused state.
             paused: false,
 
-            // The render resolution gets scaled down by the inverse of this value, but
-            // such that the display resolution is the same as the unscaled render
-            // resolution (i.e. the displayed pixels are larger).
-            pixelSize: (Math.max(1, Math.min(128, (new URLSearchParams(window.location.search).get("pixelSize") || "1")))),
-
-            // The number of threads to render with. Valid values are "all" to use all
-            // available threads, "half" to use half of the available threads, or a positive
-            // number specifying the exact thread count.
-            threadCount: (new URLSearchParams(window.location.search).get("threads") || "all"),
+            pixelSize: pixelSize,
+            resolution: resolution,
+            threadCount: threadCount,
         },
 
         container: container,

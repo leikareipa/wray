@@ -32,16 +32,13 @@ wrayRenderer.onmessage = (message)=>
             .then((response)=>response.text())
             .then((sceneSettings)=>
             {
+                // The scene settings file is essentially a JavaScript object ("{ ... }")
+                // in string form. Let's convert it into an actual object.
                 sceneSettings = Function(`"use strict"; return (${sceneSettings})`)();
 
-                sceneSettings.outputResolution =
-                {
-                    width: (1280 / wrayUI.settings.pixelSize),
-                    height: (720 / wrayUI.settings.pixelSize),
-                };
-
+                sceneSettings.outputResolution = wrayUI.settings.resolution;
                 sceneSettings.renderThreadCount = wrayUI.settings.threadCount;
-
+                
                 wrayRenderer.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
             })
             .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
