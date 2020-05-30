@@ -3,7 +3,7 @@
 #### How to use
 Run the corresponding HTML file (see below) in a browser via a web server. Wray uses Web Workers, so, depending on your browser, opening the HTML directly off the disk may not work.
 
-Note that the tests assume to be located two directories above the Wray's root; e.g. in `/wray/tests/performance/*`, where `/wray/js/*` contains the renderer's JavaScript code, etc.
+Note that the tests assume to be located two directories above the Wray's root; e.g. in `/wray/tests/performance/*`, where `/wray/src/*` contains the renderer's JavaScript code, etc.
 
 #### The tests
 

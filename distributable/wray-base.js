@@ -1,26 +1,26 @@
 // WHAT: Concatenated JavaScript source files
 // PROGRAM: Wray
-// VERSION: live (30 May 2020 19:41:45 UTC)
+// VERSION: live (30 May 2020 19:46:48 UTC)
 // AUTHOR: Tarpeeksi Hyvae Soft
 // LINK: https://www.github.com/leikareipa/wray/
 // LINK: https://www.tarpeeksihyvaesoft.com/
 // FILES:
-//	./js/wray/wray.js
-//	./js/wray/ui.js
-//	./js/wray/thread-message.js
-//	./js/wray/assert.js
-//	./js/wray/log.js
-//	./js/wray/matrix44.js
-//	./js/wray/color.js
-//	./js/wray/vertex.js
-//	./js/wray/vector.js
-//	./js/wray/ray.js
-//	./js/wray/surface.js
-//	./js/wray/sky.js
-//	./js/wray/material.js
-//	./js/wray/triangle.js
-//	./js/wray/camera.js
-//	./js/wray/bvh.js
+//	./src/wray/wray.js
+//	./src/wray/ui.js
+//	./src/wray/thread-message.js
+//	./src/wray/assert.js
+//	./src/wray/log.js
+//	./src/wray/matrix44.js
+//	./src/wray/color.js
+//	./src/wray/vertex.js
+//	./src/wray/vector.js
+//	./src/wray/ray.js
+//	./src/wray/surface.js
+//	./src/wray/sky.js
+//	./src/wray/material.js
+//	./src/wray/triangle.js
+//	./src/wray/camera.js
+//	./src/wray/bvh.js
 /////////////////////////////////////////////////
 
 /*
