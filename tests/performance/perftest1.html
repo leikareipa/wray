@@ -17,22 +17,7 @@
         <title>Performance test #1: render speed - Wray</title>
     </head>
     <body>
-        <script src="../../js/wray/wray.js"></script>
-        <script src="../../js/wray/ui.js"></script>
-        <script src="../../js/wray/thread-message.js"></script>
-        <script src="../../js/wray/assert.js"></script>
-        <script src="../../js/wray/log.js"></script>
-        <script src="../../js/wray/matrix44.js"></script>
-        <script src="../../js/wray/color.js"></script>
-        <script src="../../js/wray/vertex.js"></script>
-        <script src="../../js/wray/vector.js"></script>
-        <script src="../../js/wray/ray.js"></script>
-        <script src="../../js/wray/surface.js"></script>
-        <script src="../../js/wray/sky.js"></script>
-        <script src="../../js/wray/material.js"></script>
-        <script src="../../js/wray/triangle.js"></script>
-        <script src="../../js/wray/camera.js"></script>
-        <script src="../../js/wray/bvh.js"></script>
+        <script src="../distributable/wray-base.js"></script>
         <script>
             // For how many milliseconds, roughly, to let the test run in total.
             const testTimeMs = 120000;
@@ -53,7 +38,7 @@
             const startTime = performance.now();
 
             // Initialize Wray, and start the test.
-            let wrayThread = new Worker("../../js/wray/thread-marshal.js");
+            let wrayThread = new Worker("../../distributable/wray-thread-marshal.js");
             {
                 wrayThread.onmessage = (message)=>
                 {

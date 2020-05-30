@@ -17,22 +17,7 @@
         <title>Performance test #2: inter-thread pixel buffer transfer speed - Wray</title>
     </head>
     <body>
-        <script src="../../js/wray/wray.js"></script>
-        <script src="../../js/wray/ui.js"></script>
-        <script src="../../js/wray/thread-message.js"></script>
-        <script src="../../js/wray/assert.js"></script>
-        <script src="../../js/wray/log.js"></script>
-        <script src="../../js/wray/matrix44.js"></script>
-        <script src="../../js/wray/color.js"></script>
-        <script src="../../js/wray/vertex.js"></script>
-        <script src="../../js/wray/vector.js"></script>
-        <script src="../../js/wray/ray.js"></script>
-        <script src="../../js/wray/surface.js"></script>
-        <script src="../../js/wray/sky.js"></script>
-        <script src="../../js/wray/material.js"></script>
-        <script src="../../js/wray/triangle.js"></script>
-        <script src="../../js/wray/camera.js"></script>
-        <script src="../../js/wray/bvh.js"></script>
+        <script src="../distributable/wray-base.js"></script>
         <script>
             /*
              * Tests Wray's pixel buffer transfer speed between the window thread and Wray's render
@@ -63,7 +48,7 @@
             // calculate the time taken once the test finishes.
             let startTime = 0;
 
-            wrayThread = new Worker("../../js/wray/thread-marshal.js");
+            wrayThread = new Worker("../../distributable/wray-thread-marshal.js");
 
             wrayThread.onmessage = (message)=>
             {

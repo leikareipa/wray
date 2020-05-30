@@ -10,7 +10,7 @@
 "use strict";
 
 const wrayUI = Wray.ui(document.getElementById("wray-ui-container"));
-const wrayRenderer = new Worker("../js/wray/thread-marshal.js");
+const wrayRenderer = new Worker("../distributable/wray-thread-marshal.js");
 
 wrayUI.initialize();
 
