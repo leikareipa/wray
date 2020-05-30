@@ -78,10 +78,10 @@ onmessage = (message)=>
             Wray.assert((typeof payload.workerId != "undefined"), "No worker ID given.");
             id = payload.workerId;
 
-            Wray.assert((typeof payload.outputResolution !== "undefined"), "No render resolution given.");
+            Wray.assert((typeof payload.outputResolution === "object"), "No render resolution given.");
             renderSurface = Wray.surface(payload.outputResolution.width, payload.outputResolution.height);
 
-            Wray.assert((typeof payload.camera !== "undefined"), "No camera given.");
+            Wray.assert((typeof payload.camera === "object"), "No camera given.");
             /// TODO: Verify that the camera object contains the required properties.
             camera = Wray.camera(Wray.vector3(payload.camera.position.x, payload.camera.position.y, payload.camera.position.z),
                                  Wray.vector3(payload.camera.axisAngle.x, payload.camera.axisAngle.y, payload.camera.axisAngle.z),
@@ -92,28 +92,28 @@ onmessage = (message)=>
 
             // Modify global render parameters.
             {
-                if (typeof payload.epsilon !== "undefined")
+                if (typeof payload.epsilon === "number")
                 {
                     Wray.epsilon = payload.epsilon;
                 }
 
-                if (typeof payload.maxRayDepth !== "undefined")
+                if (typeof payload.maxRayDepth === "number")
                 {
                     Wray.maxRayDepth = payload.maxRayDepth;
                 }
 
-                if (typeof payload.sky !== "undefined" &&
-                    typeof payload.sky.model !== "undefined")
+                if (typeof payload.sky === "object" &&
+                    typeof payload.sky.model === "string")
                 {
                     switch (payload.sky.model)
                     {
                         case "cie-overcast":
                         {
-                            const direction = (typeof payload.sky.zenithDirection === "undefined")
+                            const direction = (typeof payload.sky.zenithDirection !== "object")
                                             ? {x:undefined, y:undefined, z:undefined}
                                             : payload.sky.zenithDirection;
 
-                            const luminance = (typeof payload.sky.zenithLuminance === "undefined")
+                            const luminance = (typeof payload.sky.zenithLuminance !== "number")
                                             ? undefined
                                             : payload.sky.zenithLuminance;
 
@@ -123,7 +123,7 @@ onmessage = (message)=>
                         }
                         case "solid-fill":
                         {
-                            const color = (typeof payload.sky.fillColor === "undefined")
+                            const color = (typeof payload.sky.fillColor !== "object")
                                         ? {r:undefined, g:undefined, b:undefined}
                                         : payload.sky.fillColor;
 
@@ -136,7 +136,7 @@ onmessage = (message)=>
                 }
             }
 
-            if (typeof payload.triangles !== "undefined")
+            if (typeof payload.triangles === "string")
             {
                 const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
                 sceneBVH = Wray.bvh(sceneTriangles);
