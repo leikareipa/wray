@@ -69,7 +69,7 @@
 
 "use strict";
 
-importScripts("../../distributable/wray-base.js");
+importScripts("wray-base.js");
 
 // Initialize the renderer's mutable parameters. These will be set to more suitable values
 // by the user, later, via postMessage() from the parent thread.

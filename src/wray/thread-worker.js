@@ -22,7 +22,7 @@
 
 "use strict";
 
-importScripts("../../distributable/wray-base.js");
+importScripts("wray-base.js");
 
 // A unique value that identifies this worker from among any other workers.
 let id = null;
