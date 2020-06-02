@@ -20,72 +20,85 @@ textures = bpy.data.textures
 with open(outFilename, 'w') as f:
     f.write("{\n")
 
-    f.write("\tepsilon:%f,\n" % 0.000001)
+    f.write("\t\"epsilon\":%.6f,\n" % 0.000001)
 
-    f.write("\n\tcamera:\n\t{\n")
-    f.write("\t\tposition:{x:%f,y:%f,z:%f},\n" % (camera.location[0],\
-                                                  camera.location[1],\
-                                                  camera.location[2]))
-    f.write("\t\taxisAngle:{x:%f,y:%f,z:%f,w:%f},\n" % (camera.rotation_axis_angle[1],\
-                                                        camera.rotation_axis_angle[2],\
-                                                        camera.rotation_axis_angle[3],\
-                                                        camera.rotation_axis_angle[0]))
-    f.write("\t},\n")
+    # Camera.
+    f.write("\n\t\"camera\":{\n")
+    f.write("\t\t\"position\":{\"x\":%.6f,\"y\":%.6f,\"z\":%.6f},\n" % (camera.location[0],\
+                                                                        camera.location[1],\
+                                                                        camera.location[2]))
+    f.write("\t\t\"axisAngle\":{\"x\":%.6f,\"y\":%.6f,\"z\":%.6f,\"w\":%.6f}\n" % (camera.rotation_axis_angle[1],\
+                                                                                   camera.rotation_axis_angle[2],\
+                                                                                   camera.rotation_axis_angle[3],\
+                                                                                   camera.rotation_axis_angle[0]))
+    f.write("\t},\n\n")
 
-    f.write("\n\ttriangles:`()=>\n\t{\n")
-
-    f.write("\t\t// Shorthands.\n")
-    f.write("\t\tconst t = Wray.triangle;\n")
-    f.write("\t\tconst vr = Wray.vertex\n")
-    f.write("\t\tconst vc = Wray.vector3\n\n")
-
-    # Write the materials.
-    f.write("\t\t// Set up the materials.\n")
-    f.write("\t\tconst m = {\n")
-    for material in materials:
-        f.write("\t\t\t\"%s\":" % material.name)
+    # Materials.
+    f.write("\t\"materials\":{\n")
+    for idx, material in enumerate(materials):
+        f.write("\t\t\"%s\":{\n" % material.name)
         if material.raytrace_mirror.use:
-            f.write("Wray.material.reflective(Wray.color_rgb(%f,%f,%f),%f,%f),\n" % (material.diffuse_color[0],\
-                                                                                     material.diffuse_color[1],\
-                                                                                     material.diffuse_color[2],\
-                                                                                     material.diffuse_intensity,\
-                                                                                     material.raytrace_mirror.reflect_factor))
+            f.write("\t\t\t\"type\":\"reflective\",\n")
+            f.write("\t\t\t\"color\":{\"r\":%.6f,\"g\":%.6f,\"b\":%.6f},\n" % (material.diffuse_color[0],\
+                                                                               material.diffuse_color[1],\
+                                                                               material.diffuse_color[2]))
+            f.write("\t\t\t\"albedo\":%.6f,\n" % material.diffuse_intensity)
+            f.write("\t\t\t\"reflectance\":%.6f\n" % material.raytrace_mirror.reflect_factor)
         elif material.emit:
-            f.write("Wray.material.emissive(Wray.color_rgb(%f,%f,%f)),\n" % ((material.diffuse_color[0] * material.emit),\
-                                                                             (material.diffuse_color[1] * material.emit),\
-                                                                             (material.diffuse_color[2] * material.emit)))
+            f.write("\t\t\t\"type\":\"emissive\",\n")
+            f.write("\t\t\t\"color\":{\"r\":%.6f,\"g\":%.6f,\"b\":%.6f},\n" % (material.diffuse_color[0],\
+                                                                               material.diffuse_color[1],\
+                                                                               material.diffuse_color[2]))
+            f.write("\t\t\t\"intensity\":%.6f\n" % material.emit)
         else:
-            f.write("Wray.material.lambertian(Wray.color_rgb(%f,%f,%f),%f),\n" % (material.diffuse_color[0],\
-                                                                                  material.diffuse_color[1],\
-                                                                                  material.diffuse_color[2],\
-                                                                                  material.diffuse_intensity))
-    f.write("\t\t};\n\n")
-    
-    # Write the n-gons.
-    f.write("\t\treturn [\n")
-    visible_meshes = filter(lambda x: x.type == "MESH", context.visible_objects)
-    for mesh in visible_meshes:
-        f.write("\t\t\t// Mesh: %s.\n" % mesh.name)
-        for poly in mesh.data.polygons:
-            f.write("\t\t\tt([")
-            for v, l in zip(poly.vertices, poly.loop_indices):
-                # Vertices.
-                vd = mesh.data.vertices[v].co
-                f.write("vr(vc(%.4f,%.4f,%.4f)" % (vd[0], vd[1], vd[2]))
-                # If the polygon should have smooth shading, we'll write its vertex normals
-                # as well. Otherwise, the face normal can be derived from the vertex positions.
-                if poly.use_smooth:
-                    vn = mesh.data.vertices[v].normal
-                    f.write(",vc(%.4f,%.4f,%.4f))," % (vn[0], vn[1], vn[2]))
-                else:
-                    f.write(",null),")
-            f.write("]")
-            # Material.
+            f.write("\t\t\t\"type\":\"lambertian\",\n")
+            f.write("\t\t\t\"color\":{\"r\":%.6f,\"g\":%.6f,\"b\":%.6f},\n" % (material.diffuse_color[0],\
+                                                                               material.diffuse_color[1],\
+                                                                               material.diffuse_color[2]))
+            f.write("\t\t\t\"albedo\":%.6f\n" % material.diffuse_intensity)
+        if idx < (len(materials) - 1):
+            f.write("\t\t},\n")
+        else:
+            f.write("\t\t}\n")
+    f.write("\t},\n\n")
+
+    # Triangle mesh.
+    f.write("\t\"triangles\":[\n")
+    visible_meshes = list(filter(lambda x: x.type == "MESH", context.visible_objects))
+    for meshIdx, mesh in enumerate(visible_meshes):
+        for polyIdx, poly in enumerate(mesh.data.polygons):
+            if polyIdx == 0:
+                f.write("\t\t{\n")
+            else:
+                f.write("{\n")
             if len(mesh.material_slots):
                 material = mesh.material_slots[poly.material_index].material
                 if material != None:
-                    f.write(",m[\"%s\"]" % material.name)
-            f.write("),\n")
-            
-    # Finalize the file.
-    f.write("\t\t];\n\t}`,\n}\n")
+                    f.write("\t\t\t\"material\":\"%s\",\n" % material.name)
+            f.write("\t\t\t\"vertices\":[\n")
+            vertexIdx = 0 # Temporary hack.
+            for v, l in zip(poly.vertices, poly.loop_indices):
+                f.write("\t\t\t\t{")
+                vd = mesh.data.vertices[v].co
+                f.write("\"position\":{\"x\":%.6f,\"y\":%.6f,\"z\":%.6f}" % (vd[0], vd[1], vd[2]))
+                # If the polygon should have smooth shading, we'll write its vertex normals
+                # as well. Otherwise, the face normal can be derived from the vertex positions.
+                f.write(",\"normal\":")
+                if poly.use_smooth:
+                    vn = mesh.data.vertices[v].normal
+                    f.write("{\"x\":%.6f,\"y\":%.6f,\"z\":%.6f}" % (vn[0], vn[1], vn[2]))
+                else:
+                    f.write("null")
+                if vertexIdx < (len(poly.vertices) - 1):
+                    f.write("},\n")
+                else:
+                    f.write("}")
+                vertexIdx += 1
+            f.write("]\n")
+            if meshIdx < (len(visible_meshes) - 1) or polyIdx < (len(mesh.data.polygons) - 1):
+                f.write("\t\t},")
+            else:
+                f.write("\t\t}\n")
+    f.write("\t]\n")
+
+    f.write("}")

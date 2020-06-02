@@ -12,15 +12,6 @@ Wray.triangle = function(vertices = [Wray.vertex(), Wray.vertex(), Wray.vertex()
     Wray.assert((vertices instanceof Array), "Expected an array of vertices to make a triangle.");
     Wray.assert((vertices.length === 3), "Triangles are expected to have three vertices.");
 
-    // Older scene files, prior to the introduction of Wray.vertex, used Wray.vector3 as
-    // triangle vertices. To support those older files, we'll convert their vertices into
-    // instances of Wray.vertex. Note that this backwards compatibility will likely be
-    // removed at some point, once files using the older scene format become rare enough.
-    if (vertices.some(vertex=>(typeof vertex.position === "undefined")))
-    {
-        vertices = vertices.map(vertex=>Wray.vertex(Wray.vector3(vertex.x, vertex.y, vertex.z), null))
-    }
-
     // Derive the triangle's face normal from its vertices' positions (assumes counter-
     // clockwise winding). Note that this ignores the vertices' own normals.
     const faceNormal = (()=>

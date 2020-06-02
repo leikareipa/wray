@@ -29,13 +29,9 @@ wrayRenderer.onmessage = (message)=>
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
             fetch(sceneFileName)
-            .then((response)=>response.text())
+            .then((response)=>response.json())
             .then((sceneSettings)=>
             {
-                // The scene settings file is essentially a JavaScript object ("{ ... }")
-                // in string form. Let's convert it into an actual object.
-                sceneSettings = Function(`"use strict"; return (${sceneSettings})`)();
-
                 sceneSettings.outputResolution = wrayUI.settings.resolution;
                 sceneSettings.renderThreadCount = wrayUI.settings.threadCount;
                 

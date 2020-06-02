@@ -119,10 +119,61 @@ onmessage = (message)=>
                 }
             }
 
-            if (typeof payload.triangles === "string")
+            if (Array.isArray(payload.triangles))
             {
-                const sceneTriangles = Function(`"use strict"; return (${payload.triangles})()`)();
-                sceneBVH = Wray.bvh(sceneTriangles);
+                // Convert the scene's materials into Wray material objects.
+                const materials = Object.keys(payload.materials).reduce((materials, materialName)=>
+                {
+                    const material = payload.materials[materialName];
+
+                    switch (material.type)
+                    {
+                        case "reflective":
+                        {
+                            materials[materialName] = Wray.material.reflective(Wray.color_rgb(material.color.r,
+                                                                                              material.color.g,
+                                                                                              material.color.b),
+                                                                               material.reflectance,
+                                                                               material.albedo);
+                            break;
+                        }
+                        case "lambertian":
+                        {
+                            materials[materialName] = Wray.material.lambertian(Wray.color_rgb(material.color.r,
+                                                                                              material.color.g,
+                                                                                              material.color.b),
+                                                                               material.albedo);
+                            break;
+                        }
+                        case "emissive":
+                        {
+                            materials[materialName] = Wray.material.emissive(Wray.color_rgb((material.color.r * material.intensity),
+                                                                                            (material.color.g * material.intensity),
+                                                                                            (material.color.b * material.intensity)));
+                            break;
+                        }
+                        default: Wray.assert(0, `Unknown material type "${material.type}"`); break;
+                    }
+
+                    return materials;
+                }, {});
+
+                // Convert the scene's triangles into Wray triangle objects.
+                const triangles = (payload.triangles || []).map(triangle=>
+                {
+                    const vertices = (triangle.vertices || []).map(vertex=>
+                    {
+                        const normal = vertex.normal
+                                       ? Wray.vector3(vertex.normal.x, vertex.normal.y, vertex.normal.z)
+                                       : null;
+
+                        return Wray.vertex(Wray.vector3(vertex.position.x, vertex.position.y, vertex.position.z), normal);
+                    });
+
+                    return Wray.triangle(vertices, (materials[triangle.material] || null));
+                });
+
+                sceneBVH = Wray.bvh(triangles);
 
                 postMessage(Wray.thread_message.log(`Worker #${id}: BVH construction for ${sceneBVH.triangles.length} triangles took ${sceneBVH.constructTimeMs / 1000} seconds.`));
             }
