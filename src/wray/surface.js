@@ -29,6 +29,7 @@ Wray.surface = function(width = 1280, height = 720)
         // Over how many samples the RGB values have been accumulated.
         numSamples: 1,
     }));
+
     wipe_surface();
 
     // Reset all of the surface's pixels to default initial values.
@@ -39,7 +40,6 @@ Wray.surface = function(width = 1280, height = 720)
             pixel.red = 0;
             pixel.green = 0;
             pixel.blue = 0;
-
             pixel.numSamples = 0;
         });
     };
@@ -48,6 +48,7 @@ Wray.surface = function(width = 1280, height = 720)
     {
         width,
         height,
+        pixelBuffer,
 
         wipe: wipe_surface,
 
@@ -59,11 +60,11 @@ Wray.surface = function(width = 1280, height = 720)
             for (const pixel of pixelBuffer)
             {
                 const idx = ((pixel.x + pixel.y * width) * 4);
-                const color = this.pixel_color_at(pixel.x, pixel.y);
+                const surfacePixel = pixelBuffer[pixel.x + pixel.y * width];
 
-                pixelArray[idx+0] = color.red;
-                pixelArray[idx+1] = color.green;
-                pixelArray[idx+2] = color.blue;
+                pixelArray[idx+0] = surfacePixel.red;
+                pixelArray[idx+1] = surfacePixel.green;
+                pixelArray[idx+2] = surfacePixel.blue;
                 pixelArray[idx+3] = 1;
             }
 
@@ -111,32 +112,6 @@ Wray.surface = function(width = 1280, height = 720)
             return Wray.color_rgb(pixel.red / (pixel.numSamples || 1),
                                   pixel.green / (pixel.numSamples || 1),
                                   pixel.blue / (pixel.numSamples || 1));
-        },
-
-        // Draws the contents of the surface's pixel buffer onto the given HTML5 canvas.
-        display_on_canvas: function(canvasElementId = "")
-        {
-            const canvasElement = document.getElementById(canvasElementId);
-            Wray.assert((canvasElement !== null), "Can't find the given canvas to draw the surface's contents onto.");
-
-            canvasElement.setAttribute("width", width);
-            canvasElement.setAttribute("height", height);
-
-            const renderContext = canvasElement.getContext("2d");
-            const pixelMap = renderContext.getImageData(0, 0, width, height);
-
-            pixelBuffer.forEach((pixel)=>
-            {
-                const idx = ((pixel.x + pixel.y * width) * 4);
-                const color = this.pixel_color_at(pixel.x, pixel.y);
-
-                pixelMap.data[idx+0] = 255*color.red;
-                pixelMap.data[idx+1] = 255*color.green;
-                pixelMap.data[idx+2] = 255*color.blue;
-                pixelMap.data[idx+3] = 255;
-            });
-
-            renderContext.putImageData(pixelMap, 0, 0);
         },
     });
     return publicInterface;

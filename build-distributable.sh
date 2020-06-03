@@ -7,6 +7,7 @@ FILENAME="wray-base.js"
 VERSION="live"
 
 SOURCE_FILES=("./src/wray/wray.js"
+              "./src/wray/tonemap_drago.js"
               "./src/wray/ui.js"
               "./src/wray/thread-message.js"
               "./src/wray/assert.js"

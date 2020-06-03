@@ -157,8 +157,6 @@ function worker_message_handler(message)
                     }
                 }
 
-                renderSurface.clamp_accumulated();
-
                 postMessage(Wray.thread_message.from.marshal.renderingFinished(averageSampleCount, samplesPerSecond));
 
                 workerRenderBuffers.length = 0;

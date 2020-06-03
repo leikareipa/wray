@@ -75,15 +75,26 @@ wrayRenderer.onmessage = (message)=>
                     wrayUI.container.style.width = (uiWidth + "px");
                     wrayUI.container.style.height = "auto";
 
-                    const pixelMap = new ImageData(width, height);
-                    for (let i = 0; i < (width * height * 4); i++)
+                    // Tonemap the rendered image and paint it onto the UI's canvas.
                     {
-                        pixelMap.data[i] = pixelBufferView[i]*255;
-                    }
+                        Wray.tonemappingModels.drago_2003(pixelBufferView, width, height);
 
-                    const renderContext = wrayUI.elements.canvas.getContext("2d");
-                    if (renderContext) renderContext.putImageData(pixelMap, 0, 0);
-                    else Wray.log("Failed to obtain the canvas's render context; can't display the rendering.");
+                        const canvasPixelMap = new ImageData(width, height);
+                        for (let i = 0; i < (width * height * 4); i++)
+                        {
+                            canvasPixelMap.data[i] = pixelBufferView[i]*255;
+                        }
+
+                        const renderContext = wrayUI.elements.canvas.getContext("2d");
+                        if (renderContext)
+                        {
+                            renderContext.putImageData(canvasPixelMap, 0, 0);
+                        }
+                        else
+                        {
+                            Wray.log("Failed to obtain the canvas's render context; can't display the rendering.");
+                        }
+                    }
                 }
             }
 
