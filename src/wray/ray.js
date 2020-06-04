@@ -201,7 +201,12 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
             {
                 if (!intersected) return Wray.sky_color(ray.dir);
 
-                if (material.isEmissive) return material.emission;
+                if (material.isEmissive)
+                {
+                    return Wray.color_rgb((material.color.red   * material.intensity),
+                                          (material.color.green * material.intensity),
+                                          (material.color.blue  * material.intensity));
+                }
 
                 if (depth >= Wray.maxRayDepth) return Wray.color_rgb(0, 0, 0);
             }

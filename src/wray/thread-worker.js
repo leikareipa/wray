@@ -161,9 +161,10 @@ onmessage = (message)=>
                         }
                         case "emissive":
                         {
-                            materials[materialName] = Wray.material.emissive(Wray.color_rgb((material.color.r * material.intensity),
-                                                                                            (material.color.g * material.intensity),
-                                                                                            (material.color.b * material.intensity)));
+                            materials[materialName] = Wray.material.emissive(material.intensity,
+                                                                             Wray.color_rgb(material.color.r,
+                                                                                            material.color.g,
+                                                                                            material.color.b));
                             break;
                         }
                         default: Wray.assert(0, `Unknown material type "${material.type}"`); break;

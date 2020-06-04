@@ -52,12 +52,13 @@ Wray.material = Object.freeze(
         return publicInterface;
     },
 
-    emissive: function(emission = Wray.color_rgb(1, 1, 1))
+    emissive: function(intensity = 1, color = Wray.color_rgb(1, 1, 1))
     {
         const publicInterface = Object.freeze(
         {
             isEmissive: true,
-            emission,
+            color,
+            intensity,
         });
         return publicInterface;
     },
