@@ -14,6 +14,9 @@ const wrayRenderer = new Worker("../distributable/wray-thread-marshal.js");
 
 wrayUI.initialize();
 
+// Certain settings from the scene file will be stored here for later use.
+let sceneSettings = {};
+
 // Maps the message handlers from above to incoming messages from Wray's thread.
 wrayRenderer.onmessage = (message)=>
 {
@@ -24,18 +27,20 @@ wrayRenderer.onmessage = (message)=>
     {
         case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            const sceneFileName = "./assets/sample1/colorball.wray-scene";
+            const sceneFileName = "./assets/sample1/scene.wray-scene";
 
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
             fetch(sceneFileName)
             .then((response)=>response.json())
-            .then((sceneSettings)=>
+            .then((sceneFile)=>
             {
-                sceneSettings.outputResolution = wrayUI.settings.resolution;
-                sceneSettings.renderThreadCount = wrayUI.settings.threadCount;
+                sceneFile.outputResolution = wrayUI.settings.resolution;
+                sceneFile.renderThreadCount = wrayUI.settings.threadCount;
+
+                sceneSettings.tonemapping = (sceneFile.tonemapping || {model: "none"});
                 
-                wrayRenderer.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneSettings));
+                wrayRenderer.postMessage(Wray.thread_message.to.marshal.assignRenderSettings(sceneFile));
             })
             .catch((error)=>Wray.assert(0, "Attempt to fetch file \"" + sceneFileName +
                                         "\" returned with error \"" + error + "\"."));
@@ -77,8 +82,20 @@ wrayRenderer.onmessage = (message)=>
 
                     // Tonemap the rendered image and paint it onto the UI's canvas.
                     {
-                        Wray.tonemappingModels.drago_2003(pixelBufferView, width, height);
+                        switch (sceneSettings.tonemapping.model)
+                        {
+                            default:
+                            case "drago-2003":
+                            {
+                                Wray.tonemappingModels.drago_2003(pixelBufferView,
+                                                                  width,
+                                                                  height,
+                                                                  {...sceneSettings.tonemapping});
 
+                                break;
+                            }
+                        }
+                        
                         const canvasPixelMap = new ImageData(width, height);
                         for (let i = 0; i < (width * height * 4); i++)
                         {
