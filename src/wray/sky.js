@@ -20,7 +20,41 @@ Wray.skyModels = Object.freeze(
             const theta = (1 - zenithDirection.dot(rayDir));
             const luminance = zenithLuminance * ((1 + 2 * Math.cos(theta)) / 3);
             return Wray.color_rgb(luminance, luminance, luminance);
-        }
+        };
+    },
+
+    // Expects the 'pixels' array to contain the environment map's pixel data as consecutive
+    // floating-point RGB values.
+    environment_map: function(zenithDirection = Wray.vector3(0, 0, 1), image = {width:0, height:0, pixels:[]})
+    {
+        return (rayDir = Wray.vector3())=>
+        {
+            /// TODO: Don't hardcode the zenith direction.
+            const [u, v] = (()=>
+            {
+                if (zenithDirection.y)
+                {
+                    return [
+                        (0.5 + Math.atan2(rayDir.x, rayDir.z) / (2 * Math.PI)),
+                        (0.5 - Math.asin(rayDir.y) / Math.PI)
+                    ];
+                }
+                else
+                {
+                    return [
+                        (0.5 + Math.atan2(rayDir.x, rayDir.y) / (2 * Math.PI)),
+                        (0.5 - Math.asin(-rayDir.z) / Math.PI)
+                    ];
+                }
+            })();
+
+            const idx = ((~~(image.width * u) + ~~(image.height * v) * image.width) * 3);
+            const r = image.pixels[idx+0];
+            const g = image.pixels[idx+1];
+            const b = image.pixels[idx+2];
+
+            return Wray.color_rgb(r, g, b);
+        };
     },
 
     // A solid color in all directions.

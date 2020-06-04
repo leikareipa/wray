@@ -93,7 +93,7 @@ onmessage = (message)=>
                         case "cie-overcast":
                         {
                             const direction = (typeof payload.sky.zenithDirection !== "object")
-                                            ? {x:undefined, y:undefined, z:undefined}
+                                            ? {x:0, y:1, z:0}
                                             : payload.sky.zenithDirection;
 
                             const luminance = (typeof payload.sky.zenithLuminance !== "number")
@@ -111,6 +111,20 @@ onmessage = (message)=>
                                         : payload.sky.fillColor;
 
                             Wray.sky_color = Wray.skyModels.solid_fill(color.r, color.g, color.b);
+
+                            break;
+                        }
+                        case "environment-map":
+                        {
+                            const direction = (typeof payload.sky.zenithDirection !== "object")
+                                              ? {x:0, y:1, z:0}
+                                              : payload.sky.zenithDirection;
+
+                            const image = (typeof payload.sky.imageName !== "string")
+                                          ? undefined
+                                          : payload.images[payload.sky.imageName]; /// TODO: error-check that the image exists.
+
+                            Wray.sky_color = Wray.skyModels.environment_map(Wray.vector3(direction.x, direction.y, direction.z), image);
 
                             break;
                         }

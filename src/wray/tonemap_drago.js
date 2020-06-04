@@ -26,7 +26,7 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
                                              imageWidth,
                                              imageHeight,
                                              customParams = {
-                                                 /*bias = Higher values result in a brighter image. Defaults to 0.85.*/
+                                                 /*bias = Higher values result in a darker image. Defaults to 0.85.*/
                                              })
 {
     Wray.tonemappingModels.drago_2003.epsilon = 0.000001;
