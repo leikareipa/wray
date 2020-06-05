@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# Concatenates Wray's source files into a single distributable file.
+# Concatenates Wray's source files into a few distributable files.
 
 DIRECTORY="./distributable/"
 FILENAME="wray-base.js"
 VERSION="live"
 
-SOURCE_FILES=("./src/wray/wray.js"
+SOURCE_FILES=("./src/filesaver/FileSaver.min.js"
+              "./src/wray/wray.js"
               "./src/wray/tonemap_drago.js"
+              "./src/wray/pfm.js"
               "./src/wray/ui.js"
               "./src/wray/thread-message.js"
               "./src/wray/assert.js"

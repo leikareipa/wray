@@ -27,12 +27,13 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
                                              imageHeight,
                                              customParams = {
                                                  /*bias = Higher values result in a darker image. Defaults to 0.85.*/
+                                                 /*exposure = Higher values result in a brighter image. Defaults to 0.*/
                                              })
 {
     Wray.tonemappingModels.drago_2003.epsilon = 0.000001;
     const contrastParam = 0; // Contrast improvement.
     const white = 1.0;       // Maximum display luminance.
-    const exposure = Math.pow(2, 0);
+    const exposure = Math.pow(2, (customParams.exposure || 0));
 
     // Apply the tonemapping. Code adapted with superficial modifications from sample
     // implementation by Frederic Drago.

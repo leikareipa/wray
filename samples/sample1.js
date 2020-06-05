@@ -9,13 +9,24 @@
 
 "use strict";
 
-const wrayUI = Wray.ui(document.getElementById("wray-ui-container"));
-const wrayRenderer = new Worker("../distributable/wray-thread-marshal.js");
+const wrayUI = Wray.ui(document.getElementById("wray-ui-container"), {
+    save_pfm: save_latest_image_to_pfm,
+});
 
-wrayUI.initialize();
+const wrayRenderer = new Worker("../distributable/wray-thread-marshal.js");
 
 // Certain settings from the scene file will be stored here for later use.
 let sceneSettings = {};
+
+// Data about the latest rendered image we've received from the renderer.
+const latestImage = {
+    pixels: [],
+    width: 0,
+    height: 0,
+    averageSamplesPerPixel: 0,
+}
+
+wrayUI.initialize();
 
 // Maps the message handlers from above to incoming messages from Wray's thread.
 wrayRenderer.onmessage = (message)=>
@@ -27,7 +38,7 @@ wrayRenderer.onmessage = (message)=>
     {
         case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            const sceneFileName = "./assets/sample1/scene.wray-scene";
+            const sceneFileName = "./assets/sample1/testbednew.wray-scene";
 
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
@@ -64,6 +75,10 @@ wrayRenderer.onmessage = (message)=>
                 const height = payload.height;
                 const pixelBufferView = new Float64Array(payload.pixels);
 
+                latestImage.width = width;
+                latestImage.height = height;
+                latestImage.pixels = Array.from(pixelBufferView);
+
                 // Copy the rendering's pixels onto the canvas element.
                 {
                     const uiWidth = Math.min((width * wrayUI.settings.pixelSize), document.documentElement.clientWidth);
@@ -99,7 +114,7 @@ wrayRenderer.onmessage = (message)=>
                         const canvasPixelMap = new ImageData(width, height);
                         for (let i = 0; i < (width * height * 4); i++)
                         {
-                            canvasPixelMap.data[i] = pixelBufferView[i]*255;
+                            canvasPixelMap.data[i] = (pixelBufferView[i] * 255);
                         }
 
                         const renderContext = wrayUI.elements.canvas.getContext("2d");
@@ -168,6 +183,8 @@ wrayRenderer.onmessage = (message)=>
 
         case Wray.thread_message.from.marshal.renderingFinished().name:
         {
+            latestImage.averageSamplesPerPixel = payload.avgSamplesPerPixel;
+
             wrayUI.elements.status.innerHTML = "";
             wrayUI.elements.status.appendChild(document.createTextNode("~" + payload.avgSamplesPerPixel + " sample" +
                                                                        (payload.avgSamplesPerPixel === 1? "" : "s") +
@@ -182,3 +199,35 @@ wrayRenderer.onmessage = (message)=>
         default: Wray.log(`Unhandled thread message: ${message.name}`); break;
     }
 };
+
+function save_latest_image_to_pfm()
+{
+    const width = latestImage.width;
+    const height = latestImage.height;
+    const srcPixels = latestImage.pixels;
+
+    // PFM files store pixels from bottom to top rather than top to bottom,
+    // so let's flip the image so it displays correctly when exported.
+    const flippedPixels = [];
+    for (let y = 0; y < (height / 2); y++)
+    {
+        for (let x = 0; x < width; x++)
+        {
+            const numColorChannels = 4;
+            const idxTop = ((x + y * width) * numColorChannels);
+            const idxBottom = ((x + (height - y - 1) * width) * numColorChannels);
+
+            for (let i = 0; i < numColorChannels; i++)
+            {
+                [flippedPixels[idxTop + i], flippedPixels[idxBottom + i]] = [srcPixels[idxBottom + i], srcPixels[idxTop + i]];
+            }
+        }
+    }
+
+    const pfm = Wray.pfm(flippedPixels, width, height, latestImage.averageSamplesPerPixel);
+    const pfmDataBlob = new Blob([new Uint8Array(pfm.data())], {type: "application/octet-stream"});
+    const randomFileName = new Array(7).fill().map(v=>String.fromCharCode(97 + Math.floor(Math.random() * 25))).join("");
+
+    // Using FileSaver.js.
+    saveAs(pfmDataBlob, `${randomFileName}.pfm`);
+}

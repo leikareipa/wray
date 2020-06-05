@@ -53,11 +53,56 @@ body
 
 #wray-ui-container .controls-container
 {
-    display: block;
+    display: flex;
     position: absolute;
-    right: 0;
     top: 50%;
     transform: translateY(-50%);
+}
+
+#wray-ui-container .controls-container.left
+{
+    left: 0;
+}
+
+#wray-ui-container .controls-container.right
+{
+    right: 0;
+}
+
+#wray-ui-container .dropdown-menu
+{
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    position: absolute;
+    top: -106px;
+    right: 58px;
+    color: black;
+    font-family: sans-serif;
+    font-variant: normal;
+    text-align: left;
+    border-radius: 20px 20px 0 20px;
+    border: 1px solid black;
+    /* Will be displayed when the user selects to open the menu.*/
+    visibility: hidden;
+}
+
+#wray-ui-container .dropdown-menu-element
+{
+    white-space: nowrap;
+    padding: 17px 25px;
+    user-select: none;
+}
+
+#wray-ui-container .dropdown-menu-element +  .dropdown-menu-element
+{
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#wray-ui-container .dropdown-menu-element:hover
+{
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 #wray-ui-container .button
@@ -66,14 +111,14 @@ body
     align-items: center;
 }
 
-#wray-ui-container .button + .button
-{
-    margin-left: 20px;
-}
-
 #wray-ui-container .button i
 {
     padding: 11px;
+}
+
+#wray-ui-container .button i.active
+{
+    color: white;
 }
 
 #wray-ui-container .button i:hover

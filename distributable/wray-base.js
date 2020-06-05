@@ -1,12 +1,14 @@
 // WHAT: Concatenated JavaScript source files
 // PROGRAM: Wray
-// VERSION: live (04 June 2020 00:30:54 UTC)
+// VERSION: live (05 June 2020 23:21:58 UTC)
 // AUTHOR: Tarpeeksi Hyvae Soft
 // LINK: https://www.github.com/leikareipa/wray/
 // LINK: https://www.tarpeeksihyvaesoft.com/
 // FILES:
+//	./src/filesaver/FileSaver.min.js
 //	./src/wray/wray.js
 //	./src/wray/tonemap_drago.js
+//	./src/wray/pfm.js
 //	./src/wray/ui.js
 //	./src/wray/thread-message.js
 //	./src/wray/assert.js
@@ -23,6 +25,23 @@
 //	./src/wray/camera.js
 //	./src/wray/bvh.js
 /////////////////////////////////////////////////
+
+/*
+FileSaver.js
+
+The MIT License
+
+Copyright (c) 2016 [Eli Grey][1].
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+  [1]: http://eligrey.com
+*/
+(function(a,b){if("function"==typeof define&&define.amd)define([],b);else if("undefined"!=typeof exports)b();else{b(),a.FileSaver={exports:{}}.exports}})(this,function(){"use strict";function b(a,b){return"undefined"==typeof b?b={autoBom:!1}:"object"!=typeof b&&(console.warn("Deprecated: Expected third argument to be a object"),b={autoBom:!b}),b.autoBom&&/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(a.type)?new Blob(["\uFEFF",a],{type:a.type}):a}function c(b,c,d){var e=new XMLHttpRequest;e.open("GET",b),e.responseType="blob",e.onload=function(){a(e.response,c,d)},e.onerror=function(){console.error("could not download file")},e.send()}function d(a){var b=new XMLHttpRequest;b.open("HEAD",a,!1);try{b.send()}catch(a){}return 200<=b.status&&299>=b.status}function e(a){try{a.dispatchEvent(new MouseEvent("click"))}catch(c){var b=document.createEvent("MouseEvents");b.initMouseEvent("click",!0,!0,window,0,0,0,80,20,!1,!1,!1,!1,0,null),a.dispatchEvent(b)}}var f="object"==typeof window&&window.window===window?window:"object"==typeof self&&self.self===self?self:"object"==typeof global&&global.global===global?global:void 0,a=f.saveAs||("object"!=typeof window||window!==f?function(){}:"download"in HTMLAnchorElement.prototype?function(b,g,h){var i=f.URL||f.webkitURL,j=document.createElement("a");g=g||b.name||"download",j.download=g,j.rel="noopener","string"==typeof b?(j.href=b,j.origin===location.origin?e(j):d(j.href)?c(b,g,h):e(j,j.target="_blank")):(j.href=i.createObjectURL(b),setTimeout(function(){i.revokeObjectURL(j.href)},4E4),setTimeout(function(){e(j)},0))}:"msSaveOrOpenBlob"in navigator?function(f,g,h){if(g=g||f.name||"download","string"!=typeof f)navigator.msSaveOrOpenBlob(b(f,h),g);else if(d(f))c(f,g,h);else{var i=document.createElement("a");i.href=f,i.target="_blank",setTimeout(function(){e(i)})}}:function(a,b,d,e){if(e=e||open("","_blank"),e&&(e.document.title=e.document.body.innerText="downloading..."),"string"==typeof a)return c(a,b,d);var g="application/octet-stream"===a.type,h=/constructor/i.test(f.HTMLElement)||f.safari,i=/CriOS\/[\d]+/.test(navigator.userAgent);if((i||g&&h)&&"object"==typeof FileReader){var j=new FileReader;j.onloadend=function(){var a=j.result;a=i?a:a.replace(/^data:[^;]*;/,"data:attachment/file;"),e?e.location.href=a:location=a,e=null},j.readAsDataURL(a)}else{var k=f.URL||f.webkitURL,l=k.createObjectURL(a);e?e.location=l:location.href=l,e=null,setTimeout(function(){k.revokeObjectURL(l)},4E4)}});f.saveAs=a.saveAs=a,"undefined"!=typeof module&&(module.exports=a)});
 
 /*
  * Tarpeeksi Hyvae Soft 2019 /
@@ -69,12 +88,13 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
                                              imageHeight,
                                              customParams = {
                                                  /*bias = Higher values result in a darker image. Defaults to 0.85.*/
+                                                 /*exposure = Higher values result in a brighter image. Defaults to 0.*/
                                              })
 {
     Wray.tonemappingModels.drago_2003.epsilon = 0.000001;
     const contrastParam = 0; // Contrast improvement.
     const white = 1.0;       // Maximum display luminance.
-    const exposure = Math.pow(2, 0);
+    const exposure = Math.pow(2, (customParams.exposure || 0));
 
     // Apply the tonemapping. Code adapted with superficial modifications from sample
     // implementation by Frederic Drago.
@@ -266,6 +286,91 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
     }
 };
 /*
+ * 2020 Tarpeeksi Hyvae Soft
+ * 
+ * Software: Wray
+ * 
+ * Deals with PFM images. PFMs store uncompressed high dynamic range images, where
+ * each pixel is represented as three 4-byte floating-point values (red, green, blue).
+ * 
+ */
+
+"use strict";
+
+// The pixel buffer is an array of floating-point values that define the pixels which make
+// up the PFM image. They are expected as consecutive values of red, green, blue, and alpha
+// (RGBA) for each pixel. The alpha channel will be ignored in the PFM image but must be
+// present in the input buffer. The first pixel in the buffer will represent the bottom left
+// pixel in the PFM image, and consecutive pixels fill in from left to right, bottom to top.
+//
+// The 'averageSampleCount' value is the average number of Wray render samples that went
+// into the creation of the given pixel buffer. It will be saved into the PFM file as its
+// header's byte order value.
+//
+Wray.pfm = function(pixelBuffer = [0.5, 0.5, 0.5, 0.5], width = 1, height = 1, averageSampleCount = 1)
+{
+    // Note: We only support fullcolor RGB PFMs - i.e. ones that are of type "PF".
+    const type = "PF";
+
+    // Note: For now, we only support little-endian PFMs.
+    const isLittleEndian = true;
+
+    const publicInterface = Object.freeze(
+    {
+        width,
+        height,
+        pixelBuffer: Object.freeze(pixelBuffer),
+        type,
+        isLittleEndian,
+
+        // Returns the PFM's header as an array of byte values.
+        header: function()
+        {
+            const endiannessSign = (isLittleEndian? "-" : "");
+            const headerString = `${type}\x0a${width} ${height}\x0a${endiannessSign}${averageSampleCount}\x0a`
+
+            return Array.from(headerString).map(chr=>chr.charCodeAt(0));
+        },
+
+        // Returns the PFM's body (pixel data) as an array of byte values. Each 12
+        // consecutive values (bytes) represent one pixel in the PFM image (4 bytes
+        // for the red channel, 4 for the green channel, and 4 for the blue channel).
+        // Each 4 bytes represent a 32-bit floating-point value.
+        //
+        /// TODO: Deal with endianness. This currently assumes little-endian.
+        //
+        body: function()
+        {
+            // Convert each floating-point color value into its 4 individual bytes.
+            return pixelBuffer.reduce((pixelArray, pixel, idx)=>
+            {
+                // We'll ignore the input pixel buffer's alpha channel.
+                if (((idx + 1) % 4) !== 0)
+                {
+                    pixelArray.push(...new Uint8Array(new Float32Array([pixel]).buffer, 0, 4));
+                }
+
+                return pixelArray;
+            }, []);
+        },
+
+        // The PFM file's data as an array of byte values. These can be e.g. written
+        // into a binary file as a Uint8Array.
+        data: function()
+        {
+            return this.header().concat(this.body());
+        },
+
+        // Creates and returns a new PFM image object from a PFM file's data.
+        from_file: function(pfmFile)
+        {
+            /// TODO.
+        }
+    });
+
+    return publicInterface;
+}
+/*
  * Tarpeeksi Hyvae Soft 2019 /
  * Wray
  * 
@@ -286,9 +391,23 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
 //
 //   3. Call .reveal() to make the UI visible on the page.
 //
-Wray.ui = function(container = null)
+Wray.ui = function(container = null,
+                   callbacks = {})
 {
     Wray.assert((container instanceof HTMLElement), "Invalid UI container.");
+
+    callbacks = {
+        ...{
+            // Called when the user asks to save the current rendering into a PFM file.
+            save_fpm: ()=>{Wray.warning("Unimplemented callback.")},
+
+            // Called when the user asks to load an FPM image as the basis for the current
+            // rendering. Takes one parameter: a File object corresponding to the PFM image
+            // file that the user has chosen via an <input> field.
+            load_fpm: (file)=>{Wray.warning("Unimplemented callback.")},
+        },
+        ...callbacks,
+    };
 
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -334,13 +453,17 @@ Wray.ui = function(container = null)
 
         elements:
         {
-            statusContainer:      null,
-            controlsContainer:    null,
-            status:               null,
-            canvas:               null,
-            pauseButton:          null,
-            pauseButtonLabel:     null,
-            pauseButtonContainer: null,
+            statusContainer:        null,
+            controlsContainerLeft:  null,
+            controlsContainerRight: null,
+            status:                 null,
+            canvas:                 null,
+            pauseButton:            null,
+            pauseButtonLabel:       null,
+            pauseButtonContainer:   null,
+            menuButtonContainer:    null,
+            menuButton:             null,
+            menu:                   null,
         },
 
         isVisible: false,
@@ -349,24 +472,32 @@ Wray.ui = function(container = null)
         {
             // Create the UI's DOM elements inside the UI container.
             {
-                this.elements.canvas               = document.createElement("canvas");
-                this.elements.statusContainer      = document.createElement("div");
-                this.elements.controlsContainer    = document.createElement("div");
-                this.elements.status               = document.createElement("div");
-                this.elements.pauseButton          = document.createElement("i");
-                this.elements.pauseButtonLabel     = document.createElement("div");
-                this.elements.pauseButtonContainer = document.createElement("div");
+                this.elements.canvas                 = document.createElement("canvas");
+                this.elements.statusContainer        = document.createElement("div");
+                this.elements.controlsContainerLeft  = document.createElement("div");
+                this.elements.controlsContainerRight = document.createElement("div");
+                this.elements.status                 = document.createElement("div");
+                this.elements.pauseButton            = document.createElement("i");
+                this.elements.pauseButtonLabel       = document.createElement("div");
+                this.elements.pauseButtonContainer   = document.createElement("div");
+                this.elements.menuButtonContainer    = document.createElement("div");
+                this.elements.menuButton             = document.createElement("i");
+                this.elements.menu                   = document.createElement("div");
 
                 Wray.assert(Object.getOwnPropertyNames(this.elements).every((element)=>(element !== null)),
                             "Invalid UI DOM elements!");
 
-                this.elements.canvas              .setAttribute("class", "canvas");
-                this.elements.status              .setAttribute("class", "status");
-                this.elements.statusContainer     .setAttribute("class", "status-container");
-                this.elements.controlsContainer   .setAttribute("class", "controls-container");
-                this.elements.pauseButton         .setAttribute("class", "fas fa-fw fa-sm fa-pause");
-                this.elements.pauseButtonLabel    .setAttribute("class", "button-label");
-                this.elements.pauseButtonContainer.setAttribute("class", "button pause");
+                this.elements.canvas                .setAttribute("class", "canvas");
+                this.elements.status                .setAttribute("class", "status");
+                this.elements.statusContainer       .setAttribute("class", "status-container");
+                this.elements.controlsContainerLeft .setAttribute("class", "controls-container left");
+                this.elements.controlsContainerRight.setAttribute("class", "controls-container right");
+                this.elements.pauseButton           .setAttribute("class", "fas fa-fw fa-sm fa-pause");
+                this.elements.pauseButtonLabel      .setAttribute("class", "button-label");
+                this.elements.pauseButtonContainer  .setAttribute("class", "button pause");
+                this.elements.menuButton            .setAttribute("class", "fas fa-fw fa-sm fa-bars");
+                this.elements.menuButtonContainer   .setAttribute("class", "button menu");
+                this.elements.menu                  .setAttribute("class", "dropdown-menu");
 
                 // Add the main elements.
                 this.container.appendChild(this.elements.canvas);
@@ -375,22 +506,94 @@ Wray.ui = function(container = null)
                 // Populate the status element.
                 {
                     this.elements.statusContainer.appendChild(this.elements.status);
-                    this.elements.statusContainer.appendChild(this.elements.controlsContainer);
+                    this.elements.statusContainer.appendChild(this.elements.controlsContainerLeft);
+                    this.elements.statusContainer.appendChild(this.elements.controlsContainerRight);
+
+                    // Add the menu button.
+                    this.elements.controlsContainerRight.appendChild(this.elements.menuButtonContainer);
+                    this.elements.menuButtonContainer.appendChild(this.elements.menuButton);
 
                     // Add the pause button.
-                    this.elements.controlsContainer.appendChild(this.elements.pauseButtonContainer);
+                    this.elements.controlsContainerRight.appendChild(this.elements.pauseButtonContainer);
                     this.elements.pauseButtonContainer.appendChild(this.elements.pauseButtonLabel);
                     this.elements.pauseButtonContainer.appendChild(this.elements.pauseButton);
+
+                    // Create the menu button's menu.
+                    {
+                        this.elements.menuButtonContainer.appendChild(this.elements.menu);
+                        
+                        const savePFM = document.createElement("div");
+                        savePFM.setAttribute("class", "dropdown-menu-element");
+                        savePFM.appendChild(document.createTextNode("Save as PFM"));
+                        this.elements.menu.appendChild(savePFM);
+
+                        const continueFromPFM = document.createElement("div");
+                        continueFromPFM.setAttribute("class", "dropdown-menu-element");
+                        continueFromPFM.appendChild(document.createTextNode("Continue from PFM..."));
+                        this.elements.menu.appendChild(continueFromPFM);
+                        
+                        // A file-opening dialog to allow the user to select a PFM file. This
+                        // will be an invisible DOM element, i.e. it's not added to the DOM as
+                        // such - it just has its click() function called when we want to bring
+                        // up the selector dialog.
+                        const fpmSelector = document.createElement("input");
+                        fpmSelector.setAttribute("type", "file");
+                        fpmSelector.setAttribute("accept", ".pfm");
+                        fpmSelector.onchange = ()=>
+                        {
+                            if (fpmSelector.files.length)
+                            {
+                                callbacks.load_fpm(fpmSelector.files[0]);
+                            }
+
+                            // Reset the selection, so the user can select the same file twice.
+                            fpmSelector.value = "";
+                        }
+
+                        continueFromPFM.onclick = ()=>
+                        {
+                            this.close_menu();
+
+                            // Ask the user to select a file. When the selector's onchange() detects
+                            // that a file has been selected, it will inform the proper callback
+                            // function.
+                            fpmSelector.click();
+                        }
+
+                        savePFM.onclick = ()=>
+                        {
+                            this.close_menu();
+                            callbacks.save_pfm();
+                        }
+                    }
                 }
             }
 
-            this.elements.pauseButton.pressed = false;
-            this.redraw_pause_button();
-
-            this.elements.pauseButton.onclick = ()=>
+            // Give the pause button a click handler.
             {
-                this.settings.paused = !this.settings.paused;
+                this.elements.pauseButton.pressed = false;
                 this.redraw_pause_button();
+
+                this.elements.pauseButton.onclick = ()=>
+                {
+                    this.settings.paused = !this.settings.paused;
+                    this.redraw_pause_button();
+
+                    this.close_menu();
+                    this.redraw_menu_button();
+                }
+            }
+
+            // Give the menu button a click handler.
+            {
+                this.elements.menuButton.pressed = false;
+                this.redraw_menu_button();
+
+                this.elements.menuButton.onclick = ()=>
+                {
+                    this.elements.menuButton.pressed = !this.elements.menuButton.pressed;
+                    this.redraw_menu_button();
+                }
             }
 
             return;
@@ -400,8 +603,12 @@ Wray.ui = function(container = null)
         {
             this.isVisible = true;
             this.container.style.display = "inline-block";
+        },
 
-            return;
+        close_menu: function()
+        {
+            this.elements.menuButton.pressed = false;
+            this.redraw_menu_button();
         },
 
         redraw_pause_button: function()
@@ -413,8 +620,27 @@ Wray.ui = function(container = null)
                                                             ? "Resume"
                                                             : "Pause");
             this.elements.pauseButtonLabel.textContent = this.settings.paused
-                                                         ? "paused"
+                                                         ? "PAUSED"
                                                          : "";
+        },
+
+        redraw_menu_button: function()
+        {
+            this.elements.menuButtonContainer.style.visibility = this.settings.paused
+                                                                 ? "hidden"
+                                                                 : "visible";
+
+            const isPressed = this.elements.menuButton.pressed;
+
+            this.elements.menuButton.setAttribute("class", this.settings.paused
+                                                            ? `fas fa-fw fa-sm fa-bars ${isPressed? "active" : ""}`
+                                                            : `fas fa-fw fa-sm fa-bars ${isPressed? "active" : ""}`);
+            this.elements.menuButton.setAttribute("title", this.settings.paused
+                                                            ? "Options"
+                                                            : "Options");
+            this.elements.menu.style.visibility = isPressed
+                                                  ? "visible"
+                                                  : "hidden";
         },
     };
 }
@@ -1075,7 +1301,12 @@ Wray.ray = function(pos = Wray.vector3(0, 0, 0), dir = Wray.vector3(0, 0, 1))
             {
                 if (!intersected) return Wray.sky_color(ray.dir);
 
-                if (material.isEmissive) return material.emission;
+                if (material.isEmissive)
+                {
+                    return Wray.color_rgb((material.color.red   * material.intensity),
+                                          (material.color.green * material.intensity),
+                                          (material.color.blue  * material.intensity));
+                }
 
                 if (depth >= Wray.maxRayDepth) return Wray.color_rgb(0, 0, 0);
             }
@@ -1259,7 +1490,7 @@ Wray.skyModels = Object.freeze(
                 {
                     return [
                         (0.5 + Math.atan2(rayDir.x, rayDir.z) / (2 * Math.PI)),
-                        (0.5 - Math.asin(rayDir.y) / Math.PI)
+                        (0.5 - Math.asin(-rayDir.y) / Math.PI)
                     ];
                 }
                 else
@@ -1344,12 +1575,13 @@ Wray.material = Object.freeze(
         return publicInterface;
     },
 
-    emissive: function(emission = Wray.color_rgb(1, 1, 1))
+    emissive: function(intensity = 1, color = Wray.color_rgb(1, 1, 1))
     {
         const publicInterface = Object.freeze(
         {
             isEmissive: true,
-            emission,
+            color,
+            intensity,
         });
         return publicInterface;
     },
