@@ -71,11 +71,12 @@ Wray.surface = function(width = 1280, height = 720)
             return {pixelArray, width, height};
         },
 
-        // Returns the average number of samples per pixel on this surface.
+        // Returns the average number of samples per pixel on this surface (or an
+        // estimation of such).
         average_sample_count: function()
         {
             const sampleCounts = pixelBuffer.map(element=>element.numSamples).sort();
-            return sampleCounts[sampleCounts.length/2];
+            return sampleCounts[Math.floor(sampleCounts.length / 2)];
         },
 
         // Flatten out all accumulated color data in the surface pixel buffer.
