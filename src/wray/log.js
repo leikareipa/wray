@@ -16,6 +16,13 @@ Wray.error = function(string = "")
     Wray.log(string, "error");
 }
 
+// Displays a very visually distinct warning message to the user.
+Wray.alert = function(string = "")
+{
+    window.alert(`Wray: ${string}`);
+    Wray.log(string, "error");
+}
+
 Wray.log = function(string = "", priority = "normal")
 {
     string = String(string);

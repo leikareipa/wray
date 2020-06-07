@@ -81,7 +81,7 @@ body
     font-family: sans-serif;
     font-variant: normal;
     text-align: left;
-    border-radius: 20px 20px 0 20px;
+    border-radius: 10px 10px 0 10px;
     border: 1px solid black;
     /* Will be displayed when the user selects to open the menu.*/
     visibility: hidden;
@@ -109,6 +109,12 @@ body
 {
     display: flex;
     align-items: center;
+}
+
+
+#wray-ui-container .button-label
+{
+    font-weight: bold;
 }
 
 #wray-ui-container .button i

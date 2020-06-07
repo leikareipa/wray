@@ -27,12 +27,12 @@ Wray.ui = function(container = null,
     callbacks = {
         ...{
             // Called when the user asks to save the current rendering into a PFM file.
-            save_fpm: ()=>{Wray.warning("Unimplemented callback.")},
+            save_pfm: ()=>{Wray.warning("Unimplemented callback.")},
 
             // Called when the user asks to load an FPM image as the basis for the current
             // rendering. Takes one parameter: a File object corresponding to the PFM image
             // file that the user has chosen via an <input> field.
-            load_fpm: (file)=>{Wray.warning("Unimplemented callback.")},
+            load_pfm: (file)=>{Wray.warning("Unimplemented callback.")},
         },
         ...callbacks,
     };
@@ -171,7 +171,7 @@ Wray.ui = function(container = null,
                         {
                             if (fpmSelector.files.length)
                             {
-                                callbacks.load_fpm(fpmSelector.files[0]);
+                                callbacks.load_pfm(fpmSelector.files[0]);
                             }
 
                             // Reset the selection, so the user can select the same file twice.
@@ -248,7 +248,7 @@ Wray.ui = function(container = null,
                                                             ? "Resume"
                                                             : "Pause");
             this.elements.pauseButtonLabel.textContent = this.settings.paused
-                                                         ? "PAUSED"
+                                                         ? "Paused"
                                                          : "";
         },
 

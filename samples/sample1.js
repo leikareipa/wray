@@ -11,6 +11,7 @@
 
 const wrayUI = Wray.ui(document.getElementById("wray-ui-container"), {
     save_pfm: save_latest_image_to_pfm,
+    load_pfm: load_base_pfm_image,
 });
 
 const wrayRenderer = new Worker("../distributable/wray-thread-marshal.js");
@@ -38,7 +39,7 @@ wrayRenderer.onmessage = (message)=>
     {
         case Wray.thread_message.from.marshal.threadInitialized().name:
         {
-            const sceneFileName = "./assets/sample1/testbednew.wray-scene";
+            const sceneFileName = "./assets/sample1/colorball.wray-scene";
 
             Wray.log(`Loading scene from ${sceneFileName}...`);
             
@@ -206,28 +207,75 @@ function save_latest_image_to_pfm()
     const height = latestImage.height;
     const srcPixels = latestImage.pixels;
 
+    // PFM images only contain the red, green, and blue color channels, but our
+    // rendering also includes an alpha channel. So let's remove the alpha.
+    const rgbPixels = srcPixels.reduce((pixelArray, pixel, idx)=>
+    {
+        if (((idx + 1) % 4) !== 0)
+        {
+            pixelArray.push(pixel);
+        }
+
+        return pixelArray;
+    }, []);
+
     // PFM files store pixels from bottom to top rather than top to bottom,
     // so let's flip the image so it displays correctly when exported.
-    const flippedPixels = [];
     for (let y = 0; y < (height / 2); y++)
     {
         for (let x = 0; x < width; x++)
         {
-            const numColorChannels = 4;
+            const numColorChannels = 3;
             const idxTop = ((x + y * width) * numColorChannels);
             const idxBottom = ((x + (height - y - 1) * width) * numColorChannels);
 
             for (let i = 0; i < numColorChannels; i++)
             {
-                [flippedPixels[idxTop + i], flippedPixels[idxBottom + i]] = [srcPixels[idxBottom + i], srcPixels[idxTop + i]];
+                [rgbPixels[idxTop + i], rgbPixels[idxBottom + i]] = [rgbPixels[idxBottom + i], rgbPixels[idxTop + i]];
             }
         }
     }
 
-    const pfm = Wray.pfm(flippedPixels, width, height, latestImage.averageSamplesPerPixel);
+    const pfm = Wray.pfm(width, height, rgbPixels, latestImage.averageSamplesPerPixel);
     const pfmDataBlob = new Blob([new Uint8Array(pfm.data())], {type: "application/octet-stream"});
     const randomFileName = new Array(7).fill().map(v=>String.fromCharCode(97 + Math.floor(Math.random() * 25))).join("");
 
     // Using FileSaver.js.
     saveAs(pfmDataBlob, `${randomFileName}.pfm`);
+}
+
+// Loads the given PFM image (provided as a File object), and asks the renderer to
+// use the image's pixel data as a basis for the current rendering.
+function load_base_pfm_image(pfmFile)
+{
+    Wray.pfm.from_file(pfmFile)
+        .then((pfmImage)=>
+        {
+            // PFM files store pixels from bottom to top, while the rendered image is
+            // top to bottom; so let's flip the PFM image so that it can be correctly
+            // appended to the renedering.
+            let flippedPixels = Array.from(pfmImage.pixels);
+            for (let y = 0; y < (pfmImage.height / 2); y++)
+            {
+                for (let x = 0; x < pfmImage.width; x++)
+                {
+                    const numColorChannels = 3;
+                    const idxTop = ((x + y * pfmImage.width) * numColorChannels);
+                    const idxBottom = ((x + (pfmImage.height - y - 1) * pfmImage.width) * numColorChannels);
+
+                    for (let i = 0; i < numColorChannels; i++)
+                    {
+                        [flippedPixels[idxTop + i], flippedPixels[idxBottom + i]] = [flippedPixels[idxBottom + i], flippedPixels[idxTop + i]];
+                    }
+                }
+            }
+
+            wrayRenderer.postMessage(Wray.thread_message.to.marshal.appendSamples({
+                width: pfmImage.width,
+                height: pfmImage.height,
+                pixels: flippedPixels,
+                avgSamplesPerPixel: pfmImage.averageSampleCount,
+            }));
+        })
+        .catch((error)=>Wray.alert(`Failed to set base PFM image: ${error}`));
 }

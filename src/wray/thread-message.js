@@ -41,6 +41,11 @@ Wray.thread_message =
             // Tell the marshal to adopt the given render settings, e.g. resolution.
             assignRenderSettings: (settings = {})=>Wray.thread_message_body("marshal-assign-render-settings", settings),
 
+            // Ask the marshal to append the given pixel values to the current rendering.
+            // The pixel buffer should contain consecutive RGB (no alpha) values for the
+            // pixels. The resolution of the image must match the current render resolution.
+            appendSamples: (image = {width: 0, height: 0, avgSamplesPerPixel: 0, pixels: []})=>Wray.thread_message_body("marshal-append-pfm", image),
+
             // Ask the marshal to send a copy of its render buffer to the parent
             // thread.
             uploadRenderBuffer: ()=>Wray.thread_message_body("marshal-upload-render-buffer"),

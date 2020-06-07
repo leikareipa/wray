@@ -78,12 +78,13 @@ let sceneSettings = null;
 
 let numWorkersInitialized = 0;
 let numWorkersReadyToRender = 0;
-let workers = [];
-
 let workerRenderBuffers = [];
 let numWorkersRendered = 0;
-let averageSampleCount = 0;
+let workers = [];
+
 let samplesPerSecond = 0;
+let averageSampleCount = 0;
+let appendedAvgSampleCount = 0;
 
 // Handles messages sent by worker threads.
 function worker_message_handler(message)
@@ -134,6 +135,8 @@ function worker_message_handler(message)
 
             workerRenderBuffers[payload.workerId] = payload;
 
+            // Once all workers have finished rendering, pool together their contributions
+            // into the rendered image.
             if (++numWorkersRendered == workers.length)
             {
                 for (const renderBuffer of workerRenderBuffers)
@@ -156,6 +159,8 @@ function worker_message_handler(message)
                         }
                     }
                 }
+
+                averageSampleCount += appendedAvgSampleCount;
 
                 postMessage(Wray.thread_message.from.marshal.renderingFinished(averageSampleCount, samplesPerSecond));
 
@@ -258,11 +263,51 @@ onmessage = (message)=>
             break;
         }
 
+        case Wray.thread_message.to.marshal.appendSamples().name:
+        {
+            if (renderSurface === null)
+            {
+                postMessage(Wray.thread_message.from.marshal.renderingFailed(`Can't append samples before rendering has begun.`));
+                break;
+            }
+
+            if ((payload.width != renderSurface.width) ||
+                (payload.height != renderSurface.height))
+            {
+                postMessage(Wray.thread_message.from.marshal.renderingFailed(`Can't append samples of a different resolution.`));
+                break;
+            }
+
+            // Append the samples to the rendering.
+            {
+                for (let y = 0; y < renderSurface.height; y++)
+                {
+                    for (let x = 0; x < renderSurface.width; x++)
+                    {
+                        const idx = ((x + y * renderSurface.width) * 3);
+                        const color = Wray.color_rgb(payload.pixels[idx+0],
+                                                     payload.pixels[idx+1],
+                                                     payload.pixels[idx+2]);
+
+                        // If there are no light-bringing samples of this pixel.
+                        if (!color.red && !color.green && !color.blue) continue;
+
+                        renderSurface.accumulate_to_pixel_at(x, y, color);
+                    }
+                }
+            }
+
+            appendedAvgSampleCount += payload.avgSamplesPerPixel;
+
+            break;
+        }
+
         // Specify the various render parameters etc., like scene mesh, resolution, and so on.
         case Wray.thread_message.to.marshal.assignRenderSettings().name:
         {
             sceneSettings = payload;
             numWorkersReadyToRender = 0;
+            appendedAvgSampleCount = 0;
 
             // Spawn workers.
             {

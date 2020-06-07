@@ -1,6 +1,6 @@
 // WHAT: Concatenated JavaScript source files
 // PROGRAM: Wray
-// VERSION: live (05 June 2020 23:21:58 UTC)
+// VERSION: live (07 June 2020 02:46:45 UTC)
 // AUTHOR: Tarpeeksi Hyvae Soft
 // LINK: https://www.github.com/leikareipa/wray/
 // LINK: https://www.tarpeeksihyvaesoft.com/
@@ -298,17 +298,18 @@ Wray.tonemappingModels.drago_2003 = function(pixelBuffer,
 "use strict";
 
 // The pixel buffer is an array of floating-point values that define the pixels which make
-// up the PFM image. They are expected as consecutive values of red, green, blue, and alpha
-// (RGBA) for each pixel. The alpha channel will be ignored in the PFM image but must be
-// present in the input buffer. The first pixel in the buffer will represent the bottom left
-// pixel in the PFM image, and consecutive pixels fill in from left to right, bottom to top.
+// up the PFM image. They are expected as consecutive values of red, green, and blue for
+// each pixel. The first pixel in the buffer will represent the bottom left pixel in the
+// PFM image, and consecutive pixels fill in from left to right, bottom to top.
 //
 // The 'averageSampleCount' value is the average number of Wray render samples that went
 // into the creation of the given pixel buffer. It will be saved into the PFM file as its
 // header's byte order value.
 //
-Wray.pfm = function(pixelBuffer = [0.5, 0.5, 0.5, 0.5], width = 1, height = 1, averageSampleCount = 1)
+Wray.pfm = function(width = 1, height = 1, pixelBuffer = [0.5, 0.5, 0.5], averageSampleCount = 1)
 {
+    Wray.assert((pixelBuffer.length == (width * height * 3)), "Invalid pixel buffer size.");
+
     // Note: We only support fullcolor RGB PFMs - i.e. ones that are of type "PF".
     const type = "PF";
 
@@ -319,9 +320,10 @@ Wray.pfm = function(pixelBuffer = [0.5, 0.5, 0.5, 0.5], width = 1, height = 1, a
     {
         width,
         height,
-        pixelBuffer: Object.freeze(pixelBuffer),
+        pixels: Object.freeze(pixelBuffer),
         type,
         isLittleEndian,
+        averageSampleCount,
 
         // Returns the PFM's header as an array of byte values.
         header: function()
@@ -342,14 +344,9 @@ Wray.pfm = function(pixelBuffer = [0.5, 0.5, 0.5, 0.5], width = 1, height = 1, a
         body: function()
         {
             // Convert each floating-point color value into its 4 individual bytes.
-            return pixelBuffer.reduce((pixelArray, pixel, idx)=>
+            return pixelBuffer.reduce((pixelArray, pixel)=>
             {
-                // We'll ignore the input pixel buffer's alpha channel.
-                if (((idx + 1) % 4) !== 0)
-                {
-                    pixelArray.push(...new Uint8Array(new Float32Array([pixel]).buffer, 0, 4));
-                }
-
+                pixelArray.push(...new Uint8Array(new Float32Array([pixel]).buffer, 0, 4));
                 return pixelArray;
             }, []);
         },
@@ -360,15 +357,86 @@ Wray.pfm = function(pixelBuffer = [0.5, 0.5, 0.5, 0.5], width = 1, height = 1, a
         {
             return this.header().concat(this.body());
         },
-
-        // Creates and returns a new PFM image object from a PFM file's data.
-        from_file: function(pfmFile)
-        {
-            /// TODO.
-        }
     });
 
     return publicInterface;
+}
+
+// Returns a Promise which resolves with a Wray.pfm() object once the given PFM file's
+// data has been loaded; or, in case of error, rejects with a string describing the
+// error. The target file is to be given as a File object.
+Wray.pfm.from_file = function(pfmFile)
+{
+    return new Promise((resolve, reject)=>
+    {
+        const fileReader = new FileReader();
+
+        fileReader.onloadend = ()=>
+        {
+            // The PFM file header is three lines separated by Unix carriage returns.
+            // The header itself is also separated from the pixel data in that way
+            // (the pixel data may of course also include this separating character
+            // by chance, but in that case it's not a separator).
+            const pfmBinaryData = fileReader.result.split("\x0a");
+
+            if (pfmBinaryData.length < 4)
+            {
+                reject("Malformed PFM file.");
+                return;
+            }
+
+            const pfmType = pfmBinaryData[0];
+            const [pfmWidth, pfmHeight] = pfmBinaryData[1].split(" ").map(v=>Number(v));
+            const pfmSamplesPerPixel = Math.abs(pfmBinaryData[2]);
+            const pfmIsLittleEndian = ((pfmBinaryData[2][0] || "") === "-");
+
+            if (pfmType !== "PF")
+            {
+                reject("Only full-color PFM files are supported.");
+                return;
+            }
+            
+            if (!pfmIsLittleEndian)
+            {
+                reject("Big-endian PFM files are not supported.");
+                return;
+            }
+
+            if ((pfmWidth < 0) || (pfmHeight < 0))
+            {
+                reject("Invalid PFM image dimensions.");
+                return;
+            }
+
+            // Since the PFM pixel data may by chance include the separating carriage
+            // return character, which isn't meant to separate the pixel data, let's
+            // restore it and re-join the pixel data.
+            const pfmPixels = Array.from(pfmBinaryData.slice(3).join("\x0a"));
+            
+            // Convert each run of 4 bytes in the raw PFM pixel data into a 32-bit
+            // floating-point value.
+            const floatPixels = (()=>
+            {
+                const convertedPixels = [];
+                const numColorChannels = 3;
+
+                for (let i = 0; i < (pfmWidth * pfmHeight * numColorChannels); i++)
+                {
+                    const floatBytes = pfmPixels.slice((i * 4), ((i * 4) + 4)).map(p=>p.charCodeAt(0));
+                    const uintRep = new Uint8Array(floatBytes);
+                    const floatRep = new Float32Array(uintRep.buffer);
+
+                    convertedPixels.push(floatRep[0]);
+                }
+
+                return convertedPixels;
+            })();
+
+            resolve(Wray.pfm(pfmWidth, pfmHeight, floatPixels, pfmSamplesPerPixel));
+        };
+
+        fileReader.readAsBinaryString(pfmFile);
+    });
 }
 /*
  * Tarpeeksi Hyvae Soft 2019 /
@@ -399,12 +467,12 @@ Wray.ui = function(container = null,
     callbacks = {
         ...{
             // Called when the user asks to save the current rendering into a PFM file.
-            save_fpm: ()=>{Wray.warning("Unimplemented callback.")},
+            save_pfm: ()=>{Wray.warning("Unimplemented callback.")},
 
             // Called when the user asks to load an FPM image as the basis for the current
             // rendering. Takes one parameter: a File object corresponding to the PFM image
             // file that the user has chosen via an <input> field.
-            load_fpm: (file)=>{Wray.warning("Unimplemented callback.")},
+            load_pfm: (file)=>{Wray.warning("Unimplemented callback.")},
         },
         ...callbacks,
     };
@@ -543,7 +611,7 @@ Wray.ui = function(container = null,
                         {
                             if (fpmSelector.files.length)
                             {
-                                callbacks.load_fpm(fpmSelector.files[0]);
+                                callbacks.load_pfm(fpmSelector.files[0]);
                             }
 
                             // Reset the selection, so the user can select the same file twice.
@@ -620,7 +688,7 @@ Wray.ui = function(container = null,
                                                             ? "Resume"
                                                             : "Pause");
             this.elements.pauseButtonLabel.textContent = this.settings.paused
-                                                         ? "PAUSED"
+                                                         ? "Paused"
                                                          : "";
         },
 
@@ -686,6 +754,11 @@ Wray.thread_message =
     
             // Tell the marshal to adopt the given render settings, e.g. resolution.
             assignRenderSettings: (settings = {})=>Wray.thread_message_body("marshal-assign-render-settings", settings),
+
+            // Ask the marshal to append the given pixel values to the current rendering.
+            // The pixel buffer should contain consecutive RGB (no alpha) values for the
+            // pixels. The resolution of the image must match the current render resolution.
+            appendSamples: (image = {width: 0, height: 0, avgSamplesPerPixel: 0, pixels: []})=>Wray.thread_message_body("marshal-append-pfm", image),
 
             // Ask the marshal to send a copy of its render buffer to the parent
             // thread.
@@ -820,6 +893,13 @@ Wray.warning = function(string = "")
 
 Wray.error = function(string = "")
 {
+    Wray.log(string, "error");
+}
+
+// Displays a very visually distinct warning message to the user.
+Wray.alert = function(string = "")
+{
+    window.alert(`Wray: ${string}`);
     Wray.log(string, "error");
 }
 
@@ -1407,24 +1487,12 @@ Wray.surface = function(width = 1280, height = 720)
             return {pixelArray, width, height};
         },
 
-        // Returns the average number of samples per pixel on this surface.
+        // Returns the average number of samples per pixel on this surface (or an
+        // estimation of such).
         average_sample_count: function()
         {
             const sampleCounts = pixelBuffer.map(element=>element.numSamples).sort();
-            return sampleCounts[sampleCounts.length/2];
-        },
-
-        // Flatten out all accumulated color data in the surface pixel buffer.
-        clamp_accumulated: function()
-        {
-            pixelBuffer.forEach((pixel)=>
-            {
-                const color = this.pixel_color_at(pixel.x, pixel.y);
-                pixel.red = color.red;
-                pixel.green = color.green;
-                pixel.blue = color.blue;
-                pixel.numSamples = 1;
-            });
+            return sampleCounts[Math.floor(sampleCounts.length / 2)];
         },
 
         // Accumulates the given color to the color buffer's x,y element.
@@ -1433,21 +1501,10 @@ Wray.surface = function(width = 1280, height = 720)
             const pixel = pixelBuffer[x+y*width];
             Wray.assert((pixel != null), "Detected an attempt to access an invalid element in the surface color buffer.");
 
-            pixel.red += color.red;
+            pixel.red   += color.red;
             pixel.green += color.green;
-            pixel.blue += color.blue;
+            pixel.blue  += color.blue;
             pixel.numSamples++;
-        },
-
-        // Returns the color buffer's x,y element as an RGB object.
-        pixel_color_at: function(x = 0, y = 0)
-        {
-            const pixel = pixelBuffer[x+y*width];
-            Wray.assert((pixel != null), "Detected an attempt to access an invalid element in the surface color buffer.");
-
-            return Wray.color_rgb(pixel.red / (pixel.numSamples || 1),
-                                  pixel.green / (pixel.numSamples || 1),
-                                  pixel.blue / (pixel.numSamples || 1));
         },
     });
     return publicInterface;
