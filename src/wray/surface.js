@@ -79,40 +79,16 @@ Wray.surface = function(width = 1280, height = 720)
             return sampleCounts[Math.floor(sampleCounts.length / 2)];
         },
 
-        // Flatten out all accumulated color data in the surface pixel buffer.
-        clamp_accumulated: function()
-        {
-            pixelBuffer.forEach((pixel)=>
-            {
-                const color = this.pixel_color_at(pixel.x, pixel.y);
-                pixel.red = color.red;
-                pixel.green = color.green;
-                pixel.blue = color.blue;
-                pixel.numSamples = 1;
-            });
-        },
-
         // Accumulates the given color to the color buffer's x,y element.
         accumulate_to_pixel_at: function(x = 0, y = 0, color = Wray.color_rgb())
         {
             const pixel = pixelBuffer[x+y*width];
             Wray.assert((pixel != null), "Detected an attempt to access an invalid element in the surface color buffer.");
 
-            pixel.red += color.red;
+            pixel.red   += color.red;
             pixel.green += color.green;
-            pixel.blue += color.blue;
+            pixel.blue  += color.blue;
             pixel.numSamples++;
-        },
-
-        // Returns the color buffer's x,y element as an RGB object.
-        pixel_color_at: function(x = 0, y = 0)
-        {
-            const pixel = pixelBuffer[x+y*width];
-            Wray.assert((pixel != null), "Detected an attempt to access an invalid element in the surface color buffer.");
-
-            return Wray.color_rgb(pixel.red / (pixel.numSamples || 1),
-                                  pixel.green / (pixel.numSamples || 1),
-                                  pixel.blue / (pixel.numSamples || 1));
         },
     });
     return publicInterface;
