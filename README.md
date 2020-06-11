@@ -9,7 +9,10 @@ A rendering of the Ajax bust, which was pre-decimated to about 140,000 triangles
 ### Features
 - Vanilla path tracing in the browser
 - BVH tree to accelerate ray&ndash;triangle intersections
-- Multithreaded using Web Workers
+- Multithreaded with Web Workers
+- Tonemapping
+- Image export to a HDR format
+- Save & restore render progress
 
 # Usage
 ### Setting up
