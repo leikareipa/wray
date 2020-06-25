@@ -1,6 +1,6 @@
 // WHAT: Concatenated JavaScript source files
 // PROGRAM: Wray
-// VERSION: live (07 June 2020 02:46:45 UTC)
+// VERSION: live (25 June 2020 17:16:19 UTC)
 // AUTHOR: Tarpeeksi Hyvae Soft
 // LINK: https://www.github.com/leikareipa/wray/
 // LINK: https://www.tarpeeksihyvaesoft.com/
@@ -1006,7 +1006,7 @@ Wray.matrix44 = (()=>
 
             const my = [Math.cos(y),  0,            -Math.sin(y), 0,
                         0,            1,            0,            0,
-                        Math.sin(y),  0,             Math.cos(y), 0,
+                        Math.sin(y),  0,            Math.cos(y),  0,
                         0,            0,            0,            1];
 
             const mz = [Math.cos(z),  -Math.sin(z), 0,            0,
@@ -1027,9 +1027,9 @@ Wray.matrix44 = (()=>
             const zRange = (zNear - zFar);
 
             return Object.freeze([(1 / (fovHalf * aspectRatio)), 0,             0,                             0,
-                                   0,                            (1 / fovHalf), 0,                             0,
-                                   0,                            0,             ((-zNear - zFar) / zRange),    1,
-                                   0,                            0,             (2 * zFar * (zNear / zRange)), 0]);
+                                  0,                             (1 / fovHalf), 0,                             0,
+                                  0,                             0,             ((-zNear - zFar) / zRange),    1,
+                                  0,                             0,             (2 * zFar * (zNear / zRange)), 0]);
         },
 
         screen_space: function(width = 0, height = 0)
@@ -1732,6 +1732,8 @@ Wray.camera = function(pos = Wray.vector3(0, 0, 0),
                                    (1 - (2 * ((y+0.5) / viewPlane.height))) * a,
                                    -1);
             }
+
+            dir = dir.normalized();
 
             // Point the ray in the camera's direction by transforming it by the camera's
             // axis angle. Adapted from https://stackoverflow.com/a/42422624.

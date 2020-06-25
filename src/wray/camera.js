@@ -50,6 +50,8 @@ Wray.camera = function(pos = Wray.vector3(0, 0, 0),
                                    -1);
             }
 
+            dir = dir.normalized();
+
             // Point the ray in the camera's direction by transforming it by the camera's
             // axis angle. Adapted from https://stackoverflow.com/a/42422624.
             {

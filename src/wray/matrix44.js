@@ -73,7 +73,7 @@ Wray.matrix44 = (()=>
 
             const my = [Math.cos(y),  0,            -Math.sin(y), 0,
                         0,            1,            0,            0,
-                        Math.sin(y),  0,             Math.cos(y), 0,
+                        Math.sin(y),  0,            Math.cos(y),  0,
                         0,            0,            0,            1];
 
             const mz = [Math.cos(z),  -Math.sin(z), 0,            0,
@@ -94,9 +94,9 @@ Wray.matrix44 = (()=>
             const zRange = (zNear - zFar);
 
             return Object.freeze([(1 / (fovHalf * aspectRatio)), 0,             0,                             0,
-                                   0,                            (1 / fovHalf), 0,                             0,
-                                   0,                            0,             ((-zNear - zFar) / zRange),    1,
-                                   0,                            0,             (2 * zFar * (zNear / zRange)), 0]);
+                                  0,                             (1 / fovHalf), 0,                             0,
+                                  0,                             0,             ((-zNear - zFar) / zRange),    1,
+                                  0,                             0,             (2 * zFar * (zNear / zRange)), 0]);
         },
 
         screen_space: function(width = 0, height = 0)
